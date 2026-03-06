@@ -16,7 +16,7 @@ Knuth's Claude solved the odd case in 31 explorations with significant human gui
 |------|--------|-------------|
 | m = 2 | Impossible | Exhaustive search (Aubert & Schneider, 1982) |
 | Odd m ≥ 3 | **Solved** (symbolic proof) | Diagonal layer schedule: 4 layer types, count-based |
-| Even m ≥ 4 | **Solved** (verified to m = 200, spot-checked to 500) | Bulk XYI + staircase + terminal layer |
+| Even m ≥ 4 | **Solved** (verified to m = 2,000; spot-checked to 30,000) | Bulk XYI + staircase + terminal layer |
 
 **Odd case:** 5 explorations, no human intervention. Different construction from Knuth's (layer-level vs. vertex-level). Symbolic proof via skew-map criterion.
 
@@ -38,7 +38,8 @@ residue/
 ├── constructions/
 │   ├── odd_construction.py    # decompose(m) for odd m ≥ 3
 │   ├── even_construction.py   # decompose(m) for even m ≥ 4
-│   └── verify.py              # full verification suite
+│   ├── verify.py              # full verification suite (Python)
+│   └── verify_fast.c          # fast C verifier (m > 2000)
 ├── prompt/
 │   └── residue.md             # the structured exploration prompt
 ├── logs/
@@ -55,14 +56,17 @@ residue/
 ```bash
 cd constructions
 
-# Verify all m from 3 to 201
+# Python: verify all m from 3 to 201
 python verify.py
 
-# Verify a single value
+# Python: verify a single value
 python verify.py --m 42
 
-# Fast mode (round-map composition, no full cycle tracing)
-python verify.py --fast
+# C verifier: 150x faster, for large m
+cc -O2 -o verify_fast verify_fast.c
+./verify_fast              # m=3..2001 (~2 min)
+./verify_fast -m 10000     # single value (~6s)
+./verify_fast 5000         # m=3..5000
 
 # Generate a decomposition
 python -c "

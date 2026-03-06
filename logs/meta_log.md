@@ -52,7 +52,7 @@
 | Human intervention needed | None | None | Significant (restarts, reminders) |
 | Degradation | Clean stall at m=10 | None (found literature) | Yes (lost ability to write programs) |
 
-**Key insight:** Same prompt, radically different strategies. The prompt structured the record-keeping identically; the models diverged in reasoning style. The Agent O skipped the serpentine attractor entirely. The Agent C followed almost the same trajectory as Knuth's Claude but compressed by the structured logging.
+**Key insight:** Same prompt, radically different strategies. The prompt structured the record-keeping identically; the models diverged in reasoning style. Agent O skipped the serpentine attractor entirely. Agent C followed almost the same trajectory as Knuth's Claude but compressed by the structured logging.
 
 ---
 
@@ -74,7 +74,7 @@ Instructed to work on even m with 15-exploration budget.
 ## Phase 3: Cross-Agent Data Transfer
 
 ### Decision Point
-The Agent C had m=10 and m=12 solutions. The Agent O had the structural framework but couldn't reach m=10. I decided to bridge them.
+Agent C had m=10 and m=12 solutions. Agent O had the structural framework but couldn't reach m=10. I decided to bridge them.
 
 ### Action: Fiber Coordinate Tables
 Asked Agent C to export m=4, 6, 8, 10, 12 solutions in fiber-coordinate layer format (Agent O's native representation). Passed the resulting p1_fiber_tables.md to Agent O.
@@ -123,17 +123,17 @@ Agent O is running verification of the closed-form even construction for all eve
 
 ### What the Prompt Did
 
-1. **Prevented serpentine trap compression.** The Agent C spent 5 explorations on serpentines (vs. ~10 for Knuth's Claude). The structured failure logging forced clear articulation of why serpentines fail, preventing minor-variation grinding.
+1. **Prevented serpentine trap compression.** Agent C spent 5 explorations on serpentines (vs. ~10 for Knuth's Claude). The structured failure logging forced clear articulation of why serpentines fail, preventing minor-variation grinding.
 
-2. **Made reformulations persistent.** Both agents discovered fiber coordinates. The Agent O made it central because the Reformulations field elevated it to a first-class artifact. The Agent C noted it but didn't build on it — suggesting the field helps but can't force a model to recognize which insight is load-bearing.
+2. **Made reformulations persistent.** Both agents discovered fiber coordinates. Agent O made it central because the Reformulations field elevated it to a first-class artifact. Agent C noted it but didn't build on it — suggesting the field helps but can't force a model to recognize which insight is load-bearing.
 
-3. **Enabled clean escalation.** The Agent O's stall at m=10 was well-documented: specific basin ([97,3]), specific diagnosis (repair moves preserve an invariant), specific handoff ("here's what kind of insight I'm missing"). This made the cross-agent transfer actionable.
+3. **Enabled clean escalation.** Agent O's stall at m=10 was well-documented: specific basin ([97,3]), specific diagnosis (repair moves preserve an invariant), specific handoff ("here's what kind of insight I'm missing"). This made the cross-agent transfer actionable.
 
 4. **Produced different strategies from different models.** Same scaffolding, different reasoning styles. The prompt structures process, not thought.
 
 ### What the Prompt Didn't Do
 
-1. **Didn't expand conception space.** The Agent C never found the layer-factorization framework. No prompt can make a model see structure it can't see.
+1. **Didn't expand conception space.** Agent C never found the layer-factorization framework. No prompt can make a model see structure it can't see.
 
 2. **Didn't prevent dead ends.** Both agents explored unproductive directions. The prompt made the dead ends well-documented and bounded, not non-existent.
 
@@ -141,13 +141,13 @@ Agent O is running verification of the closed-form even construction for all eve
 
 ### What Surprised Us
 
-1. **The Agent C's MRV breakthrough was the most consequential single move.** Not mathematical insight but engineering — and it produced more even-case data than Agent O's elegant theory.
+1. **Agent C's MRV breakthrough was the most consequential single move.** Not mathematical insight but engineering — and it produced more even-case data than Agent O's elegant theory.
 
 2. **The cross-agent combination was strictly more powerful than either agent alone.** This wasn't planned — it emerged from Agent O's stall at m=10 and Agent C's brute-force solutions.
 
-3. **The Agent O improved Agent C's tool.** The seeded solver is better than either the raw MRV or Agent O's analytical predictions. Tools transfer and evolve across agents.
+3. **Agent O improved Agent C's tool.** The seeded solver is better than either the raw MRV or Agent O's analytical predictions. Tools transfer and evolve across agents.
 
-4. **The even case may be genuinely messier than the odd case.** Every approach — Stappers, Ho Boon Suan, both agents — found the even case harder and less elegant. The Agent O's "m-2 bulk layers plus two repair layers" is the simplest description so far, but still more complex than the odd case's pure arithmetic criterion. This may reflect the problem's structure, not any agent's limitation.
+4. **The even case may be genuinely messier than the odd case.** Every approach — Stappers, Ho Boon Suan, both agents — found the even case harder and less elegant. Agent O's "m-2 bulk layers plus two repair layers" is the simplest description so far, but still more complex than the odd case's pure arithmetic criterion. This may reflect the problem's structure, not any agent's limitation.
 
 ---
 

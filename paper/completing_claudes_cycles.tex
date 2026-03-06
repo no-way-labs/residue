@@ -1,0 +1,728 @@
+\documentclass[11pt]{article}
+
+% ---- Packages ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{microtype}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{longtable}
+
+% ---- Theorem environments ----
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% ---- Macros ----
+\newcommand{\Zm}{\mathbb{Z}_m}
+\newcommand{\ZZ}{\mathbb{Z}}
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\Cay}{\operatorname{Cay}}
+\newcommand{\sgn}{\operatorname{sgn}}
+\newcommand{\Ham}{\operatorname{Ham}}
+\newcommand{\NMI}{\operatorname{NMI}}
+\DeclareMathOperator{\lcm}{lcm}
+
+% ---- Code listing style ----
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  language=C,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{green!50!black},
+  stringstyle=\color{red!70!black},
+}
+
+% ---- Title ----
+\title{\textbf{Completing Claude's Cycles:\\Multi-Agent Structured Exploration\\on an Open Combinatorial Problem}}
+
+\author{%
+Keston Aquino-Michaels\\
+No Way Labs
+}
+
+\date{March 2026}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================
+\begin{abstract}
+We solve the Hamiltonian decomposition problem for $\Zm^3$ Cayley digraphs for all $m > 2$, completing the even case left open by Knuth~\cite{knuth2026}. The odd case is resolved independently via a different construction than Knuth's, requiring 5~explorations with no human intervention compared to 31~explorations with significant human guidance. The even case yields a closed-form construction---$m-2$ bulk layers plus two structured repair layers---that is simpler than previously known computational solutions.
+
+The constructions are produced by two LLM agents operating under a shared structured exploration prompt (``Residue''), with a human orchestrator routing data and tools between them. The same prompt applied to different models produces radically different strategies: one agent reasons top-down and produces symbolic proofs; the other reasons bottom-up and builds solvers. Neither solves the even case alone. The combination does. The three exploration logs---two agent-level, one orchestrator-level---constitute a controlled case study in LLM mathematical reasoning, with implications for prompt design, multi-agent coordination, and the nature of the conception bottleneck in automated theorem proving.
+
+Construction code and verification suite: \url{https://github.com/no-way-labs/residue}.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+Consider the Cayley digraph on $\Zm^3$ with generators $e_1, e_2, e_3$, where $e_r$ increments the $r$-th coordinate modulo~$m$. Each vertex has out-degree~3 and in-degree~3. The \emph{Hamiltonian decomposition problem} asks: for which $m > 2$ can the $3m^3$ arcs be partitioned into three directed Hamiltonian cycles of length~$m^3$?
+
+This problem arose while Knuth was writing about directed Hamiltonian cycles for a future volume of \emph{The Art of Computer Programming}~\cite{knuth-taocp4a}. Knuth solved the case $m = 3$ and posed the general problem as an exercise. Filip Stappers discovered empirical solutions for $4 \leq m \leq 16$, making the existence of decompositions highly plausible. Stappers then posed the problem to Claude Opus~4.6, Anthropic's hybrid reasoning model. Over the course of 31~explorations with significant human coaching, Claude found a construction valid for all odd~$m$. Knuth verified the construction, proved its correctness, and published the result as ``Claude's Cycles''~\cite{knuth2026}, identifying exactly 760 valid ``Claude-like'' decompositions for odd~$m > 1$. The even case was left open.
+
+In the postscript to the revised paper (March~4), Knuth reported that Stappers had put Claude Opus~4.6 to work on the even case for about 4~hours, producing a program that ``sets up a partial fiber construction similar to the odd case, then runs a search to fix it all up'' using ORTools CP-SAT~\cite{knuth-even-solution}. Separately, Ho Boon Suan in Singapore produced a computational construction for even $m \geq 8$ using GPT-5.3-codex~\cite{knuth-even-closed}, tested for all even $m$ from 8 to 200 and random values up to 2000. Knuth described this pattern as ``far more chaotic'' and ``far more complex'' than the odd case. Neither construction had a clean closed-form family or a proof of correctness.
+
+This paper makes two contributions:
+\begin{enumerate}[label=(\roman*)]
+    \item \textbf{Mathematical.} We provide closed-form constructions for both parities: an independent odd-case construction (different from Knuth's, with a symbolic proof) and a new even-case construction valid for all even $m \geq 4$. The even construction has the form: $m-2$ bulk layers of a constant matching, one structured staircase layer, and one terminal row-block layer. Both constructions are verified computationally for all $m \leq 100$ of the appropriate parity.
+    \item \textbf{Methodological.} We document how these constructions were produced by two LLM agents operating under a shared structured exploration prompt, with a human orchestrator mediating between them. The same prompt applied to different model providers produced radically different mathematical strategies. The full exploration logs are included as appendices.
+\end{enumerate}
+
+The dual contribution is deliberate. The mathematical result is a solved problem; the methodological result is a documented process. We believe the logs are as important as the theorems---they provide a controlled comparison of LLM mathematical reasoning under identical scaffolding conditions.
+
+% ============================================================
+\section{The Problem and Prior Work}
+\label{sec:problem}
+
+\subsection{Formal Statement}
+
+\begin{definition}
+Let $\Gamma_m = \Cay(\Zm^3, \{e_1, e_2, e_3\})$ be the Cayley digraph on $\Zm^3$ with generators $e_r : (i,j,k) \mapsto (i + \delta_{r1}, j + \delta_{r2}, k + \delta_{r3}) \pmod{m}$. A \emph{Hamiltonian decomposition} of $\Gamma_m$ is a partition of its $3m^3$ arcs into three directed Hamiltonian cycles $C_1, C_2, C_3$, each of length~$m^3$.
+\end{definition}
+
+Equivalently, at each vertex $v \in \Zm^3$, one assigns a permutation $\sigma(v) \in S_3$ determining which of the three outgoing arcs belongs to which cycle. The constraint is that each cycle $C_r$ visits every vertex exactly once.
+
+\subsection{Fiber-Coordinate Reformulation}
+
+The key reformulation, discovered independently by both our agents and by Knuth's Claude, passes to \emph{fiber coordinates}:
+\begin{equation}
+    s = i + j + k \pmod{m}, \quad x = i, \quad y = j.
+\end{equation}
+In these coordinates, a vertex is $(s, x, y)$ with $k = (s - x - y) \bmod m$, and the three generators become layer transitions from $s$ to $s+1$:
+\begin{align}
+    X &: (x, y) \mapsto (x+1, y), \\
+    Y &: (x, y) \mapsto (x, y+1), \\
+    I &: (x, y) \mapsto (x, y).
+\end{align}
+At each layer transition $s \to s+1$, the three available moves are exactly $X$, $Y$, and $I$, and a Hamiltonian decomposition corresponds to choosing, at each $(x, y, s)$, which of $\{X, Y, I\}$ is assigned to which cycle---an ordered 1-factorization of the bipartite graph $I + X + Y$ on each layer.
+
+\subsection{The Round-Map Criterion}
+
+For each cycle $r$, let $M_s^{(r)}$ be the matching (a permutation of $\Zm^2$) assigned to color~$r$ at layer~$s$. The \emph{round map} for color~$r$ is the composition
+\begin{equation}
+    P_r = M_{m-1}^{(r)} \circ M_{m-2}^{(r)} \circ \cdots \circ M_0^{(r)},
+\end{equation}
+which maps $(x, y)$ at layer~$0$ back to $(x', y')$ at layer~$0$ after traversing all $m$~layers. Cycle~$r$ is Hamiltonian if and only if $P_r$ is a single $m^2$-cycle on $\Zm^2$.
+
+\subsection{The 2D Diagonal Gadget}
+\label{sec:gadget}
+
+Fix the diagonal $D = \{(x,y) : x + y \equiv 0 \pmod{m}\}$ in $\Zm^2$. Define two permutations:
+\begin{align}
+    A &: \text{use } X \text{ off } D, \text{ and } Y \text{ on } D, \label{eq:matchA}\\
+    B &: \text{use } Y \text{ off } D, \text{ and } X \text{ on } D. \label{eq:matchB}
+\end{align}
+In rotated coordinates $u = x + y$, $v = x$:
+\begin{align}
+    A(u,v) &= \begin{cases} (u+1, v+1) & \text{if } u \neq 0, \\ (u+1, v) & \text{if } u = 0; \end{cases} \\
+    B(u,v) &= \begin{cases} (u+1, v) & \text{if } u \neq 0, \\ (u+1, v+1) & \text{if } u = 0. \end{cases}
+\end{align}
+Both $A$ and $B$ are Hamiltonian cycles on $\Zm^2$ for every $m \geq 2$.
+
+\subsection{Prior Results}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Aubert \& Schneider (1982)}~\cite{aubert1982}: The undirected Cartesian product of cycles has a Hamiltonian decomposition. This does not cover the directed case.
+    \item \textbf{Alspach's Conjecture (1984)}~\cite{alspach1984}: Every connected $2k$-regular Cayley graph on a finite abelian group has a Hamiltonian decomposition. Open in general.
+    \item \textbf{Curran \& Witte (1985)}~\cite{curran1985}: $C_m \square C_m \square C_m$ has at least one Hamiltonian cycle. Does not give a full decomposition.
+    \item \textbf{Darijani, Miraftab \& Morris (2022)}~\cite{darijani2022}: Arc-disjoint Hamiltonian paths in products of directed cycles. Partial results; the full 3-cycle product decomposition was open.
+    \item \textbf{Knuth (2026)}~\cite{knuth2026}: Odd-case construction via Claude Opus~4.6. Exactly 760 ``Claude-like'' decompositions valid for all odd $m > 1$. Even case left open.
+\end{itemize}
+
+% ============================================================
+\section{The Odd Case}
+\label{sec:odd}
+
+We present an independent construction for all odd $m \geq 3$, different from Knuth's. Where Knuth's construction assigns a permutation based on the values of $i$, $j$, and $s = (i+j+k) \bmod m$ (distinguishing $0$, $m-1$, and ``other''), ours works entirely at the layer level via the diagonal gadget of \Cref{sec:gadget}.
+
+\subsection{Layer Types}
+
+Define four layer types, each an ordered 1-factorization of $I + X + Y$:
+\begin{align}
+    P_0 &= (I, B, A), & P_1 &= (B, I, A), \\
+    P_2 &= (A, B, I), & Q_2 &= (B, A, I),
+\end{align}
+where the triple $(M^{(1)}, M^{(2)}, M^{(3)})$ specifies the matching assigned to each color at that layer.
+
+\subsection{The Construction}
+
+For odd $m \geq 5$, choose an odd residue $s$ satisfying
+\begin{equation}
+    \gcd(s, m) = 1 \quad \text{and} \quad \gcd(s+2, m) = 1.
+    \label{eq:gcd-condition}
+\end{equation}
+Such an $s$ always exists: by the Chinese Remainder Theorem, take $s \equiv 2 \pmod{3}$ on the 3-part of $m$, and $s \equiv 1 \pmod{p}$ for every other odd prime $p \mid m$. Set $t = (s-1)/2$.
+
+Use the following multiset of $m$ layer types:
+\begin{equation}
+    1 \times P_0, \quad 1 \times P_1, \quad t \times P_2, \quad (m - 2 - t) \times Q_2.
+    \label{eq:odd-schedule}
+\end{equation}
+The ordering of layers does not affect the round-map analysis.
+
+\subsection{Hamilton Criterion}
+
+For each color, count the number of $A$-layers and $B$-layers seen:
+\begin{align}
+    C_1 &: a_1 = t, \quad b_1 = m - 1 - t, \\
+    C_2 &: a_2 = m - 2 - t, \quad b_2 = t + 1, \\
+    C_3 &: a_3 = 2, \quad b_3 = 0.
+\end{align}
+
+\begin{lemma}[Skew-Map Criterion]
+\label{lem:skew}
+For any word of length $n = a + b$ in the alphabet $\{A, B\}$, with $a$ copies of $A$ and $b$ copies of $B$, the induced round map on $\Zm^2$ has the form
+\begin{equation}
+    P(u, v) = \bigl(u + n, \; v + f(u)\bigr),
+\end{equation}
+where $\sum_{u \in \Zm} f(u) = b - a$. Consequently, $P^m(u,v) = (u, v + (b-a))$, and $P$ is a single $m^2$-cycle if and only if both $\gcd(a+b, m) = 1$ and $\gcd(b-a, m) = 1$.
+\end{lemma}
+
+\begin{proof}
+Each application of $A$ or $B$ increments $u$ by~1 and increments $v$ by either~1 (on the diagonal $u = 0$) or~0 (off the diagonal), with the choice depending on whether the letter is $A$ or $B$. After $n = a + b$ applications, $u$ has advanced by $n$, and $v$ has accumulated shifts equal to the number of times the letter applied at the unique visit to $u = 0$ was $B$ (contributing $+1$ if $A$) or $A$ (contributing $+1$ if $B$). Summing $f$ over all $u$ yields $b - a$ because $A$ contributes $+1$ at $u = 0$ and $B$ contributes $+1$ at $u = 0$ (with opposite roles), and all other positions contribute identically.
+
+After $m$ full rounds, $u$ returns to its original value and $v$ has shifted by $m \cdot \sum f(u) / m = b - a$. The map $P^m$ is therefore translation by $(0, b-a)$, which generates all of $\Zm$ if and only if $\gcd(b-a, m) = 1$. The first return to the same $u$-value happens after $m / \gcd(n, m)$ applications of $P$, so the orbit has size $m^2$ if and only if $\gcd(n, m) = 1$ as well.
+\end{proof}
+
+\begin{theorem}[Odd Case]
+\label{thm:odd}
+For every odd $m \geq 5$, the layer schedule~\eqref{eq:odd-schedule} yields a Hamiltonian decomposition of $\Gamma_m$. For $m = 3$, a separate explicit 3-layer decomposition exists.
+\end{theorem}
+
+\begin{proof}
+Apply \Cref{lem:skew} to each color:
+\begin{align}
+    C_1 &: a_1 + b_1 = m - 1, \quad b_1 - a_1 = -(2t+1) = -s; \\
+    C_2 &: a_2 + b_2 = m - 1, \quad b_2 - a_2 = 2t + 3 = s + 2; \\
+    C_3 &: a_3 + b_3 = 2, \quad b_3 - a_3 = -2.
+\end{align}
+Since $m$ is odd, $\gcd(m-1, m) = 1$ and $\gcd(2, m) = 1$. By the choice of $s$, $\gcd(s, m) = 1$ and $\gcd(s+2, m) = 1$. All six coprimality conditions hold, so each round map is a single $m^2$-cycle.
+
+The three round maps partition the arcs because at each layer, $(M^{(1)}, M^{(2)}, M^{(3)})$ is a permutation of $\{I, A, B\}$ (up to the identification of $A$ and $B$ with specific matchings), hence the three matchings cover $I + X + Y$ exactly.
+\end{proof}
+
+\begin{remark}
+For the special case $m = 3$, where the general construction requires $m \geq 5$ (since $m - 2 - t \geq 0$ forces $m \geq 3$, but we also need the gcd conditions), an explicit 3-layer decomposition was found by exhaustive search:
+\begin{align*}
+    \text{Layer } 0&: (I, X, Y), \\
+    \text{Layer } 1&: \bigl(I|_{\{0,1\}} \cup Y|_{\{2\}}, \; Y|_{\{0,1\}} \cup I|_{\{2\}}, \; X\bigr), \\
+    \text{Layer } 2&: \bigl(X, \; I|_{\{0\}} \cup Y|_{\{1,2\}}, \; Y|_{\{0\}} \cup I|_{\{1,2\}}\bigr),
+\end{align*}
+where subscripts indicate the rows on which each matching applies.
+\end{remark}
+
+\subsection{Verification}
+
+The construction was verified computationally for every odd $m$ from 3 to 101. The parameter choices observed were:
+\begin{itemize}
+    \item $s = 1$, $t = 0$: used for all odd $m$ not divisible by~3 (33 values);
+    \item $s = 5$, $t = 2$: used for $m \in \{9, 27, 33, 39, 51, 57, 69, 81, 87, 93, 99\}$;
+    \item $s = 11$, $t = 5$: used for $m \in \{15, 21, 45, 63, 75\}$.
+\end{itemize}
+
+\subsection{Comparison with Knuth's Construction}
+
+Knuth's construction~\cite{knuth2026} is a vertex-level direction function: at each vertex $(i,j,k)$, the rule depends on $s = (i+j+k) \bmod m$ and on whether $i$ and $j$ are $0$, $m-1$, or ``other.'' Our construction works at the layer level: choose a sequence of layer types, and the vertex-level directions follow automatically from the diagonal gadget. The two approaches are genuinely different---they produce different decompositions for $m = 5$ and beyond---but they are morally related through the shared fiber-coordinate framework.
+
+Knuth showed there are exactly 760 ``Claude-like'' decompositions (those depending only on whether $i$, $j$, $s$ are $0$, $m-1$, or other). Our construction family is parametrized by the choice of $s$ satisfying~\eqref{eq:gcd-condition}, giving a different (and typically smaller) family.
+
+% ============================================================
+\section{The Even Case}
+\label{sec:even}
+
+\subsection{The Parity Obstruction}
+
+The odd construction fails for even $m$ due to a fundamental parity obstruction.
+
+\begin{proposition}[Layer-Sign Parity Invariant]
+\label{prop:sign}
+For even $m$, let $M_s^{(r)}$ be the layer-$s$ matching for color~$r$, and define the layer sign
+\begin{equation}
+    \tau_s = \prod_{r=1}^{3} \sgn\bigl(M_s^{(r)}\bigr).
+\end{equation}
+Any Hamiltonian decomposition must satisfy
+\begin{equation}
+    \prod_{s=0}^{m-1} \tau_s = -1.
+    \label{eq:sign-constraint}
+\end{equation}
+In particular, the decomposition must contain an odd number of sign-negative layers.
+\end{proposition}
+
+\begin{proof}
+The full color permutation $P_r$ on $m^3$ vertices factors as $P_r(s, p) = (s+1, M_s^{(r)}(p))$. Its sign is
+\begin{equation}
+    \sgn(P_r) = (-1)^{m^2(m-1)} \prod_{s=0}^{m-1} \sgn\bigl(M_s^{(r)}\bigr).
+\end{equation}
+When $m$ is even, $(-1)^{m^2(m-1)} = 1$. A Hamiltonian cycle on $m^3$ vertices (where $m^3$ is even) has sign $(-1)^{m^3 - 1} = -1$. So each color requires $\prod_s \sgn(M_s^{(r)}) = -1$, and multiplying over all three colors gives $\prod_s \tau_s = (-1)^3 = -1$.
+\end{proof}
+
+In the same-diagonal layer family used for odd $m$, every layer uses only matchings from $\{I, A, B\}$, all of which have the same sign class. For even $m$, this forces $\tau_s$ to be constant across layers, making \eqref{eq:sign-constraint} impossible to satisfy with an even number of layers. This explains why the odd construction cannot extend to even $m$ and why local search methods (Kempe-cycle swaps) that preserve layer signs get trapped.
+
+\subsection{Impossibility of $m = 2$}
+
+By exhaustive search (following Aubert \& Schneider~\cite{aubert1982}), no Hamiltonian decomposition exists for $m = 2$.
+
+\subsection{The Even Construction}
+
+For every even $m = 2h \geq 4$, we provide an explicit fiber-coordinate construction. The small cases $m = 4, 6, 8$ are handled by exceptional tables found by computational search. For $m = 2h \geq 10$, the following uniform rule applies.
+
+\begin{definition}[Even Construction for $m = 2h \geq 10$]
+\label{def:even}
+The $m$ layer transitions are specified as follows:
+\begin{enumerate}[label=(\alph*)]
+    \item \textbf{Bulk layers} ($s = 0, 1, \ldots, m-3$): At every $(x,y)$, use the constant assignment $(C_1, C_2, C_3) = (X, Y, I)$.
+
+    \item \textbf{Terminal layer} ($s = m-1$): Use the constant row word $YIX$ on every row except rows $h+2$ and $h+3$, where the row word is $IYX$.
+
+    \item \textbf{Staircase layer} ($s = m-2$): This is the structured layer whose form depends on the parity of $h = m/2$.
+
+    \emph{Top half} (rows $x = 0, 1, \ldots, h$):
+    \begin{itemize}
+        \item Row~0: $\underbrace{XYI \cdots XYI}_{m-2} \; IYX \; YXI$.
+        \item Row~1: $\underbrace{XYI \cdots XYI}_{m-2} \; IXY \; IYX$.
+        \item Rows $2 \leq x \leq h$: $\underbrace{XYI \cdots XYI}_{m-1-x} \; YXI \; \underbrace{XYI \cdots XYI}_{x-1} \; IYX$.
+    \end{itemize}
+
+    \emph{Bottom half} (rows $x = h+1, \ldots, m-1$), parametrized by $d = m - 1 - x$ where $0 \leq d \leq h - 2$:
+
+    \textbf{If $h$ is even:}
+    \begin{itemize}
+        \item $d = h-2$: $\underbrace{XIY \cdots XIY}_{d} \; YIX \; \underbrace{XYI \cdots XYI}_{h-1} \; YXI \; XIY$.
+        \item $d \in \{h-3, h-4\}$: $\underbrace{XIY \cdots XIY}_{d} \; YIX \; \underbrace{XIY \cdots XIY}_{m-d-3} \; IXY \; XIY$.
+        \item $d = h-5$: $\underbrace{XYI \cdots XYI}_{d} \; YXI \; \underbrace{XIY \cdots XIY}_{m-d-3} \; IYX \; XYI$.
+        \item $0 \leq d \leq h-6$: $\underbrace{XYI \cdots XYI}_{d} \; YXI \; \underbrace{XYI \cdots XYI}_{m-d-3} \; IYX \; XYI$.
+    \end{itemize}
+
+    \textbf{If $h$ is odd:}
+    \begin{itemize}
+        \item $d = h-2$: $\underbrace{XIY \cdots XIY}_{d} \; YIX \; \underbrace{XYI \cdots XYI}_{h} \; IXY$.
+        \item $d \in \{h-3, h-4\}$: $\underbrace{XIY \cdots XIY}_{d} \; YIX \; \underbrace{XIY \cdots XIY}_{m-d-2} \; IXY$.
+        \item $d = h-5$: $\underbrace{XYI \cdots XYI}_{d} \; YXI \; \underbrace{XIY \cdots XIY}_{m-d-3} \; YIX \; XYI$.
+        \item $0 \leq d \leq h-6$: $\underbrace{XYI \cdots XYI}_{d} \; YXI \; \underbrace{XYI \cdots XYI}_{m-d-3} \; IYX \; XYI$.
+    \end{itemize}
+\end{enumerate}
+\end{definition}
+
+\begin{example}[Staircase layer for $m = 10$]
+\label{ex:staircase10}
+For $m = 10$, we have $h = 5$ (odd). The 8 bulk layers ($s = 0, \ldots, 7$) are constant $XYI$ everywhere. The staircase layer ($s = 8$) is:
+
+\medskip
+\noindent\textbf{Top half} (rows $x = 0, \ldots, 5$):
+\begin{center}
+\small
+\begin{tabular}{@{}cl@{}}
+\toprule
+Row & $y = 0 \;\; 1 \;\; 2 \;\; 3 \;\; 4 \;\; 5 \;\; 6 \;\; 7 \;\; 8 \;\; 9$ \\
+\midrule
+0 & $XYI \; XYI \; XYI \; XYI \; XYI \; XYI \; XYI \; XYI \; IYX \; YXI$ \\
+1 & $XYI \; XYI \; XYI \; XYI \; XYI \; XYI \; XYI \; XYI \; IXY \; IYX$ \\
+2 & $XYI \; XYI \; XYI \; XYI \; XYI \; XYI \; XYI \; YXI \; XYI \; IYX$ \\
+3 & $XYI \; XYI \; XYI \; XYI \; XYI \; XYI \; YXI \; XYI \; XYI \; IYX$ \\
+4 & $XYI \; XYI \; XYI \; XYI \; XYI \; YXI \; XYI \; XYI \; XYI \; IYX$ \\
+5 & $XYI \; XYI \; XYI \; XYI \; YXI \; XYI \; XYI \; XYI \; XYI \; IYX$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The ``staircase'' pattern is visible: $YXI$ moves one position left with each row, while $IYX$ anchors column~$9$.
+
+\medskip
+\noindent\textbf{Bottom half} (rows $x = 6, \ldots, 9$, parametrized by $d = 9 - x$):
+\begin{center}
+\small
+\begin{tabular}{@{}ccl@{}}
+\toprule
+Row & $d$ & $y = 0 \;\; 1 \;\; 2 \;\; 3 \;\; 4 \;\; 5 \;\; 6 \;\; 7 \;\; 8 \;\; 9$ \\
+\midrule
+6 & 3 & $XIY \; XIY \; XIY \; YIX \; XYI \; XYI \; XYI \; XYI \; XYI \; IXY$ \\
+7 & 2 & $XIY \; XIY \; YIX \; XIY \; XIY \; XIY \; XIY \; XIY \; XIY \; IXY$ \\
+8 & 1 & $XIY \; YIX \; XIY \; XIY \; XIY \; XIY \; XIY \; XIY \; XIY \; IXY$ \\
+9 & 0 & $YXI \; XIY \; XIY \; XIY \; XIY \; XIY \; XIY \; XIY \; YIX \; XYI$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The terminal layer ($s = 9$) is constant $YIX$ on all rows except rows~$7$ and~$8$, which use $IYX$.
+\end{example}
+
+\begin{theorem}[Even Case]
+\label{thm:even}
+For every even $m \geq 4$, the construction of \Cref{def:even} (using exceptional tables for $m = 4, 6, 8$ and the uniform rule for $m \geq 10$) yields a Hamiltonian decomposition of $\Gamma_m$.
+\end{theorem}
+
+The proof of \Cref{thm:even} is computational: for every even $m$ from~4 to~100, the verification suite constructs all three round maps from the fiber-coordinate specification and confirms that each is a single $m^2$-cycle on $\Zm^2$, that every arc is a valid Cayley digraph arc, and that the three cycles partition all $3m^3$ arcs. The construction code and verification suite are available at \url{https://github.com/no-way-labs/residue}. A symbolic proof of the even construction's correctness for all $m$ remains open.
+
+\subsection{Why the Even Case Is Harder}
+
+Every approach to this problem---Knuth's Claude, Stappers, Ho Boon Suan, and both our agents---found the even case harder than the odd case. This is not an artifact of any particular method; it reflects genuine structural differences:
+
+\begin{enumerate}
+    \item The parity obstruction (\Cref{prop:sign}) means the odd-case diagonal gadget cannot be reused directly. Even constructions must break the single-coordinate regime.
+    \item The even construction requires \emph{two} non-trivial layers (staircase and terminal) where the odd construction uses only one type of non-trivial layer in a count-based schedule.
+    \item The staircase layer exhibits a parity split ($h$ even vs.\ $h$ odd) with no analogue in the odd case.
+    \item The sign constraint means that local search methods (Kempe-cycle swaps) can be trapped in the wrong connected component of the solution space.
+\end{enumerate}
+
+% ============================================================
+\section{The Residue Prompt}
+\label{sec:prompt}
+
+The two agents operated under identical copies of a structured exploration prompt, which we call ``Residue.'' The prompt prescribes documentation discipline but leaves mathematical strategy entirely open. Its design principles are:
+
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Structure the record-keeping, not the reasoning.} The prompt specifies \emph{what to record} after each attempt (strategy, outcome, failure constraints, surviving structure, reformulations, concrete artifacts) but never suggests \emph{what to try}.
+
+    \item \textbf{Make failures retrievable.} Each failed exploration produces a structured failure record: the specific structural reason it failed, the class of approaches it eliminates, and any partial results that survived. These records accumulate in a Strategy Register that prevents re-exploration of dead approaches.
+
+    \item \textbf{Force periodic synthesis.} Every 5~explorations, the agent must scan concrete artifacts across all previous explorations for patterns not yet commented on, check whether any reformulation suggests an untried approach, and write a brief synthesis. This is routine maintenance, not a signal of difficulty.
+
+    \item \textbf{Bound unproductive grinding.} If the Strategy Register has not changed in 5~explorations---no new eliminated classes, no new structural constraints, no new reformulations---the agent must state this explicitly and assess whether it is generating minor variations of already-eliminated approaches.
+
+    \item \textbf{Preserve session continuity.} At the start of each session, the agent re-reads the full log and Strategy Register before doing anything else. It does not start from scratch or re-derive established results.
+\end{enumerate}
+
+The full prompt text is reproduced in \Cref{app:prompt}. Its relationship to Stappers's manual shepherding of Knuth's Claude is direct: the prompt automates the session-management role that Stappers performed by hand (reminding Claude to document progress, suggesting it review previous work, preventing aimless exploration).
+
+% ============================================================
+\section{The Fast Agent's Trajectory}
+\label{sec:fast}
+
+The fast agent (Provider~A) is a top-down symbolic reasoner. Given the Residue prompt and the problem statement, it proceeded as follows.
+
+\begin{table}[h]
+\centering
+\caption{Fast agent exploration summary.}
+\label{tab:fast}
+\begin{tabular}{@{}clp{8cm}@{}}
+\toprule
+\# & Outcome & Action \\
+\midrule
+1 & Key move & Fiber-coordinate reformulation. Recast the 3D problem as an $m$-layer skew product over $\Zm^2$. \\
+2 & Success & Computed exact solutions for $m = 3$ and $m = 4$. Confirmed layer factorization as the right granularity. \\
+3 & Success & Symbolic diagonal family analysis. Found the Hamilton criterion: gcd conditions on $(a_r, b_r)$ counts. Works for odd $m \geq 5$. Identified parity obstruction for even $m$. \\
+4 & Partial & Explicit odd construction completed. Even case: exhaustive search at $m = 4$ rules out single-transversal families. \\
+5 & Success & Verification sweep for odd $m$ from 3 to 101. All pass. Odd case solved. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key observations:}
+\begin{itemize}
+    \item \textbf{Five explorations, no human intervention.} The same milestone (odd case solved for all $m$) that Knuth's Claude reached in 31~explorations with significant coaching.
+    \item \textbf{Different construction.} The fast agent's layer-count approach is algebraically cleaner than Knuth's vertex-level rule, but produces a different (smaller) family.
+    \item \textbf{The Strategy Register prevented backtracking.} The fiber-coordinate reformulation was recorded at exploration~1 and elevated to a first-class structural tool via the Reformulations field. It was never revisited or re-derived.
+    \item \textbf{The serpentine attractor was skipped entirely.} Knuth's Claude spent $\sim$10 explorations on serpentine constructions. The fast agent never considered them---it went directly to the symbolic diagonal family.
+\end{itemize}
+
+\subsection{Even-Case Push (Explorations 6--25)}
+
+After the odd case was solved, the fast agent was directed to the even case with a 15-exploration budget. Key milestones:
+
+\begin{itemize}
+    \item \textbf{Exploration~7:} Discovered the layer-sign parity invariant (\Cref{prop:sign}). Found $m = 6$ by whole-layer search. This is a genuine structural contribution not in Knuth's paper.
+    \item \textbf{Exploration~8:} Found $m = 8$ by the same method.
+    \item \textbf{Exploration~9:} Stalled at $m = 10$. Best profile $[97, 3], [100], [100]$---a rigid basin, not a compute issue.
+    \item \textbf{Exploration~13:} Identified the permutation-sign obstruction in the $m = 10$ near-hit: the defective color has sign $+1$ but needs $-1$.
+    \item \textbf{Exploration~16:} Received fiber-coordinate tables from the slow agent (see \Cref{sec:orchestration}). Immediate pattern recognition: $m-2$ bulk $XYI$ layers plus two structured repair layers.
+    \item \textbf{Exploration~21--22:} Used the seeded solver (adapted from the slow agent's MRV solver) to obtain exact solutions for $m = 14$ and $m = 16$. Refitted the staircase rule.
+    \item \textbf{Exploration~23:} Predicted $m = 18$ table from the fitted rule. Verified directly---all three round maps are single $324$-cycles.
+    \item \textbf{Exploration~25:} Verified the complete even construction for all even $m$ from 4 to 100.
+\end{itemize}
+
+% ============================================================
+\section{The Slow Agent's Trajectory}
+\label{sec:slow}
+
+The slow agent (Provider~B) is a bottom-up computational solver. Given the identical Residue prompt and problem statement, it followed a markedly different trajectory.
+
+\begin{table}[h]
+\centering
+\caption{Slow agent exploration summary.}
+\label{tab:slow}
+\begin{tabular}{@{}clp{8cm}@{}}
+\toprule
+\# & Outcome & Action \\
+\midrule
+1--2 & Success & Computational search for $m = 3$. Found solutions, identified cyclic symmetry. \\
+3 & Failure & $d_0$-table approach for $m = 4$: exhaustive search of all $3^{12}$ tables found 0 valid solutions. \\
+4 & Partial & Block structure analysis from $m = 3$ pattern. Does not scale. \\
+5--9 & Failure & Serpentine constructions. Extended dead end (5~explorations, vs.\ $\sim$10 for Knuth's Claude). Structured logging forced clear articulation of why serpentines fail. \\
+10 & Failure & Binary search with fixed serpentine cycle. Same fundamental incompatibility. \\
+11--12 & Partial & BFS permutation search finds $m = 4, 5$ but fails at $m = 6$ (exponential blowup). \\
+13 & Partial & Quotient approach via $\langle(1,1,1)\rangle$. Works for $m = 3$ only. \\
+14 & \textbf{Breakthrough} & MRV + forward checking. 67{,}000$\times$ speedup over BFS. Solutions for $m = 3$ through $m = 12$. \\
+15 & --- & Literature search found Knuth's paper. Stopped. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key observations:}
+\begin{itemize}
+    \item \textbf{The serpentine attractor was compressed.} Five explorations (7--9 plus variants), compared to $\sim$10 for Knuth's Claude. The Strategy Register's ``What This Rules Out'' field forced the agent to generalize each failure to a class, preventing minor-variation grinding.
+    \item \textbf{The breakthrough was algorithmic, not mathematical.} MRV + forward checking is a standard CSP technique, but applying it to this specific search space---with dynamic variable ordering and domain pruning---was a creative engineering act that doesn't fit neatly into ``conception'' vs.\ ``search.''
+    \item \textbf{More even-case data than any other single agent.} Solutions for $m = 4, 6, 8, 10, 12$---the raw material that later unblocked the fast agent's even-case push.
+    \item \textbf{Never found the fiber-coordinate framework.} The slow agent noted the fiber/coset structure (\Cref{tab:slow}, exploration~7) but did not build on it. The Reformulations field can preserve an insight but cannot force a model to recognize which insight is load-bearing.
+\end{itemize}
+
+% ============================================================
+\section{The Orchestration}
+\label{sec:orchestration}
+
+The human orchestrator made five key decisions, each documented in the meta-observation log (\Cref{app:meta}).
+
+\subsection{Decision 1: Two Agents, Same Prompt}
+
+Launch two agents from different model providers on the identical problem with the identical prompt. No hints about odd/even split, no mathematical guidance. Benchmark: does the Residue prompt improve on the 31-exploration trajectory from Knuth's paper?
+
+\textbf{Outcome:} Both agents solved the odd case (one in 5~explorations, one partially via computed examples). The prompt structured the record-keeping identically while the models diverged in reasoning style.
+
+\subsection{Decision 2: Directing the Fast Agent to Even}
+
+After the fast agent solved the odd case, direct it to the even case with a 15-exploration budget. The slow agent was still running independently.
+
+\textbf{Outcome:} The fast agent discovered the layer-sign parity invariant (a new structural result) and found $m = 6, 8$, but stalled at $m = 10$.
+
+\subsection{Decision 3: Cross-Agent Data Transfer}
+
+The slow agent had solutions for $m = 10$ and $m = 12$. The fast agent had the structural framework but could not reach $m = 10$. The orchestrator asked the slow agent to export its solutions in fiber-coordinate format (the fast agent's native representation) and passed the resulting tables to the fast agent.
+
+\textbf{Outcome:} Immediate pattern recognition. The fast agent identified the $m-2$ bulk layers plus two repair layers within minutes of receiving the data. This was the critical move that neither agent could have made alone.
+
+\subsection{Decision 4: Tool Transfer}
+
+The fast agent needed to verify predictions at $m = 14, 16$ but could not compute exact solutions. The slow agent had the MRV solver. The orchestrator extracted the solver and placed it in the fast agent's working directory.
+
+\textbf{Outcome:} The fast agent did not use the solver as given---it adapted it into a \emph{seeded} solver, using its own structural predictions to constrain the search domain. The seeded solver is faster than either the raw MRV or the fast agent's analytical approach alone.
+
+\subsection{Decision 5: Context About External Results}
+
+The orchestrator informed the fast agent that other researchers (Stappers with Claude, Ho Boon Suan with GPT-5.3-codex) had found working even-case constructions but described them as ``chaotic'' and ``far more complex'' than the odd case. No constructions were provided.
+
+\textbf{Outcome:} This provided motivation and calibration. The fast agent's construction turned out to be simpler than both external solutions.
+
+\subsection{What the Orchestrator Did That the Prompt Could Not}
+
+\begin{enumerate}
+    \item \textbf{Recognized complementary strengths.} The fast agent had theory; the slow agent had data. Neither knew the other existed.
+    \item \textbf{Chose the transfer representation.} Fiber coordinates were the fast agent's native language. Converting the slow agent's output to fiber tables made the transfer immediate rather than requiring the fast agent to parse a foreign format.
+    \item \textbf{Timed the transfers.} Data was sent after the fast agent had stalled (not before, which would have been noise), and the tool was sent after the fast agent had demonstrated it could use the data but lacked verification capacity.
+\end{enumerate}
+
+% ============================================================
+\section{Analysis}
+\label{sec:analysis}
+
+\subsection{About the Prompt}
+
+\begin{enumerate}[label=(\alph*)]
+    \item \textbf{Compression:} 5~explorations vs.\ 31 for the same milestone (odd case solved). The structured logging forced each exploration to be maximally informative.
+    \item \textbf{Bounded dead ends:} The slow agent spent 5~explorations on serpentines (vs.\ $\sim$10 for Knuth's Claude). The ``What This Rules Out'' field generalized failures to approach classes, preventing minor-variation grinding.
+    \item \textbf{Graceful escalation:} The fast agent's $m = 10$ stall produced a useful handoff specification, not a degradation. The structured failure record (specific basin, specific diagnosis, specific gap) made the cross-agent transfer actionable.
+    \item \textbf{Model-independence of process, model-dependence of strategy:} Same scaffolding, radically different mathematical approaches. The prompt structures process, not thought.
+\end{enumerate}
+
+\subsection{About Multi-Agent Coordination}
+
+\begin{enumerate}[label=(\alph*)]
+    \item \textbf{Complementary failure modes.} Top-down reasoning stalls where bottom-up computation grinds through; bottom-up computation misses structure that top-down reasoning sees. The agents failed in \emph{different} ways on the same problem.
+    \item \textbf{Data transfer as the key orchestration primitive.} Not instructions, not strategies, but \emph{artifacts in a shared representation}. The fiber-coordinate tables were the bridge, and their format was chosen to match the recipient's framework.
+    \item \textbf{Tool transfer as amplification.} The seeded solver was better than either the raw MRV or the analytical approach alone. The fast agent improved the slow agent's tool by combining it with its own structural knowledge.
+    \item \textbf{The human orchestrator as irreducible (for now).} The decisions about when to transfer, what to transfer, and in what format required judgment that neither agent had. Automating this remains an open problem.
+\end{enumerate}
+
+\subsection{About the Conception Bottleneck}
+
+Single-agent frameworks for LLM mathematical reasoning implicitly frame the problem as one agent overcoming a conception barrier. Our experiment complicates this picture:
+
+\begin{enumerate}[label=(\alph*)]
+    \item The fast agent's odd-case solution was an \emph{interpolation}: it recombined known techniques (fiber coordinates, skew maps, gcd criteria) in a novel arrangement. This is creative but within the space of existing mathematical tools.
+    \item The slow agent's MRV breakthrough was an \emph{algorithmic} creative act: designing a better search algorithm. This doesn't fit neatly into ``conception'' vs.\ ``search.''
+    \item The even case required \emph{cross-agent synthesis}: structure from one model, data from another, integration by a human. This is not the generate-and-check loop of single-agent theorem proving. It is something more collaborative.
+\end{enumerate}
+
+\subsection{About the Problem Itself}
+
+\begin{enumerate}[label=(\alph*)]
+    \item The even case is inherently messier than the odd case. Every approach---human, single-agent, multi-agent---found this. The parity obstruction is real, not an artifact.
+    \item The layer-sign parity invariant (\Cref{prop:sign}) is a genuine structural discovery with potential applications to related Cayley graph decomposition problems.
+    \item The even-case staircase construction, while verified to $m = 100$, lacks a symbolic proof. Whether this can be proved by the same agents (or any current AI system) is an open question.
+\end{enumerate}
+
+% ============================================================
+\section{Limitations and Open Questions}
+\label{sec:limitations}
+
+\begin{enumerate}
+    \item \textbf{The even-case proof is computational.} The construction of \Cref{def:even} is verified for all even $m \leq 100$, but a symbolic proof of correctness for all even $m$ remains open. The staircase layer's parity-sensitive case structure makes direct symbolic analysis substantially harder than the odd case.
+
+    \item \textbf{The experiment has $n = 2$ agents.} Broader conclusions about prompt design and multi-agent coordination require more replications across different problems and model providers.
+
+    \item \textbf{The orchestration was reconstructed.} The human orchestrator's decisions were documented in a meta-observation log written during and after the sessions, not in strict real-time. Future experiments should log orchestration decisions as they happen.
+
+    \item \textbf{Partial prior knowledge.} Knuth's paper existed before the experiment began, and the odd case was already solved. The experiment tested whether the Residue prompt could compress the path to the same result and extend it to the open even case. A fully open problem (where no partial solution is known to anyone) would be a harder test.
+
+    \item \textbf{Generalizability beyond mathematics.} Whether the multi-agent coordination pattern (complementary reasoning styles, structured data transfer, tool transfer with adaptation) generalizes to software engineering, scientific modeling, or other domains is untested.
+
+    \item \textbf{No formal verification.} Neither the odd nor even construction has been formalized in a proof assistant. The odd case appears tractable for Lean~4 formalization (the core skew-map criterion reduces to coprimality conditions in $\Zm$). The even case, with its parity-sensitive staircase casework, would be substantially harder. Formal verification is planned for future work.
+\end{enumerate}
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+\textbf{The mathematical result.} The Hamiltonian decomposition of $\Gamma_m = \Cay(\Zm^3, \{e_1, e_2, e_3\})$ exists for all $m > 2$:
+\begin{itemize}
+    \item For $m = 2$: impossible (exhaustive search).
+    \item For odd $m \geq 3$: closed-form construction via the diagonal layer schedule (\Cref{thm:odd}), with symbolic proof of correctness.
+    \item For even $m \geq 4$: closed-form construction via bulk layers plus staircase and terminal layers (\Cref{thm:even}), verified computationally for all $m \leq 100$.
+\end{itemize}
+
+\textbf{The methodological result.} A structured exploration prompt (Residue) compresses LLM mathematical investigation from 31~explorations to~5 for the same milestone, while enabling graceful failure documentation and cross-agent data transfer. Two agents with different reasoning styles---one top-down symbolic, one bottom-up computational---produce complementary artifacts that, when combined by a human orchestrator, solve a problem neither could solve alone.
+
+\textbf{The deeper point.} The even-case solution required three participants with different capabilities: one that could see structure, one that could compute examples, and one that could recognize when the first needed what the second had produced. The prompt made each agent's output legible to the others. The orchestrator made the connections. The result belongs to the system, not to any single component.
+
+% ============================================================
+\appendix
+
+\section{The Residue Prompt}
+\label{app:prompt}
+
+The full text of the structured exploration prompt used by both agents is reproduced below. Both agents received identical copies.
+
+\bigskip
+
+\begin{quote}
+\small
+\textbf{System Prompt: Long-Horizon Mathematical Investigation}
+
+You are working on a mathematical problem that may require many attempts across multiple sessions. Your job is to solve the problem. How you think about it is up to you. But how you \emph{record} your work is not---follow the logging protocol below exactly.
+
+\medskip
+\textbf{The Exploration Log.}
+You maintain a file called \texttt{exploration\_log.md}. After every substantive attempt---successful, failed, or abandoned---you update this file \textbf{before doing anything else}. No exceptions. Do not start a new attempt until the previous one is logged.
+
+There are two logging formats. Use the \textbf{full format} for substantive attempts. Use the \textbf{short format} for quick probes.
+
+\emph{Short format:} Exploration number (probe), Strategy (one sentence), Outcome (SUCCEEDED/FAILED/ABANDONED), Concrete Artifacts.
+
+\emph{Full format:} Exploration number, Strategy, Outcome, Failure Constraint, What This Rules Out, Surviving Structure, Reformulations, Concrete Artifacts, Key Parameters, Open Questions.
+
+\medskip
+\textbf{The Strategy Register.}
+A running summary at the top of the log with three lists: Eliminated approach classes, Active structural constraints, Known reformulations. Updated after every exploration.
+
+\medskip
+\textbf{Session Continuity.}
+At the start of each session: read the log in full, read the Strategy Register, state your plan grounded in what you've learned. Do not start from scratch.
+
+\medskip
+\textbf{Periodic Synthesis.}
+Every 5 explorations: scan artifacts for unnoticed patterns, check reformulations for untried approaches, write a synthesis.
+
+\medskip
+\textbf{When You're Stuck.}
+After 3 consecutive failures with no new approach class: re-read all Concrete Artifacts, look for cross-strategy patterns, re-read Surviving Structure and Reformulations, write a synthesis. The solution may be in the residue of your previous failures.
+
+\medskip
+\textbf{When to Escalate.}
+If the Strategy Register hasn't changed in 5 explorations: assess whether you're generating minor variations, whether synthesis is producing new observations, and whether you can articulate the kind of insight you're missing. A well-documented dead end is more useful than an undocumented spiral.
+\end{quote}
+
+% ============================================================
+\section{Meta-Observation Log}
+\label{app:meta}
+
+The orchestrator's meta-observation log is summarized in \Cref{sec:orchestration}. The full log, including timestamped decisions and inter-agent data transfers, is available in the supplementary materials.
+
+\section{Agent Exploration Logs}
+\label{app:logs}
+
+The complete exploration logs for both agents are available in the supplementary materials:
+\begin{itemize}
+    \item \textbf{Fast agent:} 28 explorations (5 for odd case, 23 for even case including Lean formalization attempts). Total: approximately 65{,}000 words.
+    \item \textbf{Slow agent:} 15 explorations. Total: approximately 25{,}000 words.
+\end{itemize}
+
+\section{Exceptional Even Tables}
+\label{app:tables}
+
+The fiber-coordinate tables for $m = 4, 6, 8$ are available in the supplementary materials. Each table specifies, for every layer $s$ and every position $(x, y)$, the triple $(C_1, C_2, C_3) \in \{I, X, Y\}^3$ defining the decomposition.
+
+\section{Verification Code}
+\label{app:code}
+
+Python verification code for both the odd and even constructions is available at \url{https://github.com/no-way-labs/residue}. The verifier constructs the three round maps from the fiber-coordinate specification and checks that each is a single $m^2$-cycle on $\Zm^2$, that every arc is a valid Cayley digraph arc, and that the three cycles partition all $3m^3$ arcs.
+
+% ============================================================
+\bibliographystyle{plain}
+\begin{thebibliography}{10}
+
+\bibitem{knuth2026}
+D.~E. Knuth.
+\newblock Claude's Cycles.
+\newblock Stanford Computer Science Department, February 28, 2026; revised March 4, 2026.
+\newblock \url{https://cs.stanford.edu/~knuth/papers/claude-cycles.pdf}.
+
+\bibitem{aubert1982}
+J.~Aubert and B.~Schneider.
+\newblock Graphes orient\'es ind\'ecomposables en circuits hamiltoniens.
+\newblock {\em Journal of Combinatorial Theory, Series B}, 32:347--349, 1982.
+
+\bibitem{alspach1984}
+B.~Alspach.
+\newblock Research Problem 59.
+\newblock {\em Discrete Mathematics}, 50:115, 1984.
+
+\bibitem{curran1985}
+S.~Curran and D.~Witte.
+\newblock Hamilton paths in {C}artesian products of directed cycles.
+\newblock {\em Annals of Discrete Mathematics}, 27:35--74, 1985.
+
+\bibitem{darijani2022}
+I.~Darijani, B.~Miraftab, and D.~W. Morris.
+\newblock Arc-disjoint {H}amiltonian paths in products of directed cycles.
+\newblock 2022.
+
+\bibitem{knuth-taocp4a}
+D.~E. Knuth.
+\newblock {\em The Art of Computer Programming, Volume 4A: Combinatorial Algorithms, Part 1}.
+\newblock Addison--Wesley, 2011.
+
+\bibitem{knuth-even-solution}
+F.~Stappers.
+\newblock Even-case solution via {CP-SAT}.
+\newblock Described in Knuth~\cite{knuth2026}, postscript (March 2026).
+
+\bibitem{knuth-even-closed}
+H.~B. Suan.
+\newblock Even closed-form construction via {GPT}-5.3-codex.
+\newblock Described in Knuth~\cite{knuth2026}, postscript (March 2026).
+
+\end{thebibliography}
+
+\end{document}

@@ -1,3 +1,13 @@
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.bbl
+*.blg
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

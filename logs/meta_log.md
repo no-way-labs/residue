@@ -8,7 +8,8 @@
 
 **Agents:**
 - **Agent O** (GPT-5.4 Thinking, Extra High): Top-down symbolic reasoner
-- **Agent C** (Claude Opus 4.6): Bottom-up computational solver
+- **Agent C** (Claude Opus 4.6 Thinking): Bottom-up computational solver
+- **Orchestrator** (Claude Opus 4.6 Thinking, directed by the author): Cross-agent data and tool transfer
 
 ---
 
@@ -82,7 +83,7 @@ Asked Agent C to export m=4, 6, 8, 10, 12 solutions in fiber-coordinate layer fo
 ### Agent O Response
 Immediate recognition: "p1_fiber_tables.md unblocked the even side in a real way." All five solutions verified. Pattern identified: **m-2 bulk XYI layers, one staircase repair layer, one terminal row-block layer.** Simpler description than any other known approach to the even case.
 
-**Observation:** The combination produced insight that neither agent could reach alone. Agent O had the framework but not the data. Agent C had the data but not the framework. The human orchestrator was the bridge — same role as Filip, but routing information between agents rather than managing one agent's session.
+**Observation:** The combination produced insight that neither agent could reach alone. Agent O had the framework but not the data. Agent C had the data but not the framework. The orchestrator agent was the bridge — same role as Filip, but routing information between agents rather than managing one agent's session.
 
 ---
 
@@ -137,7 +138,7 @@ Agent O is running verification of the closed-form even construction for all eve
 
 2. **Didn't prevent dead ends.** Both agents explored unproductive directions. The prompt made the dead ends well-documented and bounded, not non-existent.
 
-3. **Didn't replace the human orchestrator.** The key decisions — when to transfer data between agents, when to transfer tools, what context to provide — were all human. The prompt made each agent more effective individually, but the combination required external coordination.
+3. **Didn't replace the orchestrator.** The key decisions — when to transfer data between agents, when to transfer tools, what context to provide — required a separate agent with a different view of both sessions. The prompt made each agent more effective individually, but the combination required external coordination.
 
 ### What Surprised Us
 

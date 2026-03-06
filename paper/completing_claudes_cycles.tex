@@ -71,7 +71,7 @@ No Way Labs
 \begin{abstract}
 We solve the Hamiltonian decomposition problem for $\Zm^3$ Cayley digraphs for all $m > 2$, completing the even case left open by Knuth~\cite{knuth2026}. The odd case is resolved independently via a different construction than Knuth's, requiring 5~explorations with no human intervention compared to 31~explorations with significant human guidance. The even case yields a closed-form construction---$m-2$ bulk layers plus two structured repair layers---that is simpler than previously known computational solutions.
 
-The constructions are produced by two LLM agents operating under a shared structured exploration prompt (``Residue''), with a human orchestrator routing data and tools between them. The same prompt applied to two models---GPT-5.4 Thinking (Extra High) and Claude Opus~4.6---produces radically different strategies: one agent reasons top-down and produces symbolic proofs; the other reasons bottom-up and builds solvers. Neither solves the even case alone. The combination does. The three exploration logs---two agent-level, one orchestrator-level---constitute a controlled case study in LLM mathematical reasoning, with implications for prompt design, multi-agent coordination, and the nature of the conception bottleneck in automated theorem proving.
+The constructions are produced by two LLM agents operating under a shared structured exploration prompt (``Residue''), with an orchestrator agent (also Claude Opus~4.6 Thinking) routing data and tools between them. The same prompt applied to two models---GPT-5.4 Thinking (Extra High) and Claude Opus~4.6 Thinking---produces radically different strategies: one agent reasons top-down and produces symbolic proofs; the other reasons bottom-up and builds solvers. Neither solves the even case alone. The combination does. The three exploration logs---two agent-level, one orchestrator-level---constitute a controlled case study in LLM mathematical reasoning, with implications for prompt design, multi-agent coordination, and the nature of the conception bottleneck in automated theorem proving.
 
 Construction code and verification suite: \url{https://github.com/no-way-labs/residue}.
 \end{abstract}
@@ -89,7 +89,7 @@ In the postscript to the revised paper (March~4), Knuth reported that Stappers h
 This paper makes two contributions:
 \begin{enumerate}[label=(\roman*)]
     \item \textbf{Mathematical.} We provide closed-form constructions for both parities: an independent odd-case construction (different from Knuth's, with a symbolic proof) and a new even-case construction valid for all even $m \geq 4$. The even construction has the form: $m-2$ bulk layers of a constant matching, one structured staircase layer, and one terminal row-block layer. Both constructions are verified computationally for all $m \leq 100$ of the appropriate parity.
-    \item \textbf{Methodological.} We document how these constructions were produced by two LLM agents operating under a shared structured exploration prompt, with a human orchestrator mediating between them. The same prompt applied to GPT-5.4 Thinking and Claude Opus~4.6 produced radically different mathematical strategies. The full exploration logs are included as appendices.
+    \item \textbf{Methodological.} We document how these constructions were produced by two LLM agents operating under a shared structured exploration prompt, with an orchestrator agent (a third Claude Opus~4.6 Thinking instance) mediating between them. The same prompt applied to GPT-5.4 Thinking and Claude Opus~4.6 Thinking produced radically different mathematical strategies. The full exploration logs are included as appendices.
 \end{enumerate}
 
 The dual contribution is deliberate. The mathematical result is a solved problem; the methodological result is a documented process. We believe the logs are as important as the theorems---they provide a controlled comparison of LLM mathematical reasoning under identical scaffolding conditions.
@@ -458,7 +458,7 @@ After the odd case was solved, Agent~O was directed to the even case with a 15-e
 \section{Agent~C's Trajectory}
 \label{sec:slow}
 
-Agent~C (Anthropic Claude Opus~4.6) is a bottom-up computational solver. Given the identical Residue prompt and problem statement, it followed a markedly different trajectory.
+Agent~C (Anthropic Claude Opus~4.6 Thinking) is a bottom-up computational solver. Given the identical Residue prompt and problem statement, it followed a markedly different trajectory.
 
 \begin{table}[h]
 \centering
@@ -493,7 +493,7 @@ Agent~C (Anthropic Claude Opus~4.6) is a bottom-up computational solver. Given t
 \section{The Orchestration}
 \label{sec:orchestration}
 
-The human orchestrator made five key decisions, each documented in the meta-observation log (\Cref{app:meta}).
+The orchestrator agent (a third Claude Opus~4.6 Thinking instance, directed by the author) made five key decisions, each documented in the meta-observation log (\Cref{app:meta}).
 
 \subsection{Decision 1: Two Agents, Same Prompt}
 
@@ -552,7 +552,7 @@ The orchestrator informed Agent~O that other researchers (Stappers with Claude, 
     \item \textbf{Complementary failure modes.} Top-down reasoning stalls where bottom-up computation grinds through; bottom-up computation misses structure that top-down reasoning sees. The agents failed in \emph{different} ways on the same problem.
     \item \textbf{Data transfer as the key orchestration primitive.} Not instructions, not strategies, but \emph{artifacts in a shared representation}. The fiber-coordinate tables were the bridge, and their format was chosen to match the recipient's framework.
     \item \textbf{Tool transfer as amplification.} The seeded solver was better than either the raw MRV or the analytical approach alone. Agent~O improved Agent~C's tool by combining it with its own structural knowledge.
-    \item \textbf{The human orchestrator as irreducible (for now).} The decisions about when to transfer, what to transfer, and in what format required judgment that neither agent had. Automating this remains an open problem.
+    \item \textbf{The orchestrator role as irreducible (for now).} The decisions about when to transfer, what to transfer, and in what format required judgment that neither solving agent had. The orchestrator was itself an LLM (Claude Opus~4.6 Thinking), but directed by a human. Whether a single agent can play all three roles simultaneously remains an open problem.
 \end{enumerate}
 
 \subsection{About the Conception Bottleneck}
@@ -562,7 +562,7 @@ Single-agent frameworks for LLM mathematical reasoning implicitly frame the prob
 \begin{enumerate}[label=(\alph*)]
     \item Agent~O's odd-case solution was an \emph{interpolation}: it recombined known techniques (fiber coordinates, skew maps, gcd criteria) in a novel arrangement. This is creative but within the space of existing mathematical tools.
     \item Agent~C's MRV breakthrough was an \emph{algorithmic} creative act: designing a better search algorithm. This doesn't fit neatly into ``conception'' vs.\ ``search.''
-    \item The even case required \emph{cross-agent synthesis}: structure from one model, data from another, integration by a human. This is not the generate-and-check loop of single-agent theorem proving. It is something more collaborative.
+    \item The even case required \emph{cross-agent synthesis}: structure from one model, data from another, integration by an orchestrator. This is not the generate-and-check loop of single-agent theorem proving. It is something more collaborative.
 \end{enumerate}
 
 \subsection{About the Problem Itself}
@@ -582,7 +582,7 @@ Single-agent frameworks for LLM mathematical reasoning implicitly frame the prob
 
     \item \textbf{The experiment has $n = 2$ agents.} Broader conclusions about prompt design and multi-agent coordination require more replications across different problems and model providers.
 
-    \item \textbf{The orchestration was reconstructed.} The human orchestrator's decisions were documented in a meta-observation log written during and after the sessions, not in strict real-time. Future experiments should log orchestration decisions as they happen.
+    \item \textbf{The orchestration was reconstructed.} The orchestrator agent's decisions were documented in a meta-observation log written during and after the sessions, not in strict real-time. Future experiments should log orchestration decisions as they happen.
 
     \item \textbf{Partial prior knowledge.} Knuth's paper existed before the experiment began, and the odd case was already solved. The experiment tested whether the Residue prompt could compress the path to the same result and extend it to the open even case. A fully open problem (where no partial solution is known to anyone) would be a harder test.
 
@@ -602,9 +602,9 @@ Single-agent frameworks for LLM mathematical reasoning implicitly frame the prob
     \item For even $m \geq 4$: closed-form construction via bulk layers plus staircase and terminal layers (\Cref{thm:even}), verified computationally for all $m \leq 100$.
 \end{itemize}
 
-\textbf{The methodological result.} A structured exploration prompt (Residue) compresses LLM mathematical investigation from 31~explorations to~5 for the same milestone, while enabling graceful failure documentation and cross-agent data transfer. Two agents with different reasoning styles---one top-down symbolic, one bottom-up computational---produce complementary artifacts that, when combined by a human orchestrator, solve a problem neither could solve alone.
+\textbf{The methodological result.} A structured exploration prompt (Residue) compresses LLM mathematical investigation from 31~explorations to~5 for the same milestone, while enabling graceful failure documentation and cross-agent data transfer. Two agents with different reasoning styles---one top-down symbolic, one bottom-up computational---produce complementary artifacts that, when combined by an orchestrator agent (also Claude Opus~4.6 Thinking), solve a problem neither could solve alone.
 
-\textbf{The deeper point.} The even-case solution required three participants with different capabilities: one that could see structure, one that could compute examples, and one that could recognize when the first needed what the second had produced. The prompt made each agent's output legible to the others. The orchestrator made the connections. The result belongs to the system, not to any single component.
+\textbf{The deeper point.} The even-case solution required three participants with different capabilities: one that could see structure, one that could compute examples, and one that could recognize when the first needed what the second had produced. The prompt made each agent's output legible to the others. The orchestrator---itself an LLM, directed by the author---made the connections. All three participants were LLM agents. The result belongs to the system, not to any single component.
 
 % ============================================================
 \appendix

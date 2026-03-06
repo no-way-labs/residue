@@ -100,7 +100,7 @@ See [prompt/residue.md](prompt/residue.md) for the full text.
 - J. Aubert & B. Schneider, "Graphes orientés indécomposables en circuits hamiltoniens," JCTB 32 (1982).
 - B. Alspach, "Research Problem 59," Discrete Mathematics 50 (1984).
 - S. Curran & D. Witte, "Hamilton paths in Cartesian products of directed cycles," Ann. Disc. Math. 27 (1985).
-- I. Darijani, B. Miraftab, & D. W. Morris, "Arc-disjoint Hamiltonian paths in products of directed cycles" (2022).
+- I. Darijani, B. Miraftab, & D. W. Morris, "Arc-disjoint Hamiltonian paths in Cartesian products of directed cycles," Ars Math. Contemp. 25(2) (2025). arXiv:2203.11017.
 
 ## License
 

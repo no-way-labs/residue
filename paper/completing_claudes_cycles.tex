@@ -88,7 +88,7 @@ In the postscript to the revised paper (March~4), Knuth reported that Stappers h
 
 This paper makes two contributions:
 \begin{enumerate}[label=(\roman*)]
-    \item \textbf{Mathematical.} We provide closed-form constructions for both parities: an independent odd-case construction (different from Knuth's, with a symbolic proof) and a new even-case construction valid for all even $m \geq 4$. The even construction has the form: $m-2$ bulk layers of a constant matching, one structured staircase layer, and one terminal row-block layer. Both constructions are verified computationally for all $m \leq 100$ of the appropriate parity.
+    \item \textbf{Mathematical.} We provide closed-form constructions for both parities: an independent odd-case construction (different from Knuth's, with a symbolic proof) and a new even-case construction valid for all even $m \geq 4$. The even construction has the form: $m-2$ bulk layers of a constant matching, one structured staircase layer, and one terminal row-block layer. Both constructions are verified computationally for all $m \leq 200$ of the appropriate parity, with additional round-map spot checks passing at $m = 250, 300, 400$, and $500$.
     \item \textbf{Methodological.} We document how these constructions were produced by two LLM agents operating under a shared structured exploration prompt, with an orchestrator agent (a third Claude Opus~4.6 Thinking instance) mediating between them. The same prompt applied to GPT-5.4 Thinking and Claude Opus~4.6 Thinking produced radically different mathematical strategies. The full exploration logs are included as appendices.
 \end{enumerate}
 
@@ -237,7 +237,7 @@ where subscripts indicate the rows on which each matching applies.
 
 \subsection{Verification}
 
-The construction was verified computationally for every odd $m$ from 3 to 101. The parameter choices observed were:
+The construction was verified computationally for every odd $m$ from 3 to 199. The parameter choices observed were:
 \begin{itemize}
     \item $s = 1$, $t = 0$: used for all odd $m$ not divisible by~3 (33 values);
     \item $s = 5$, $t = 2$: used for $m \in \{9, 27, 33, 39, 51, 57, 69, 81, 87, 93, 99\}$;
@@ -375,7 +375,7 @@ Row & $d$ & $y = 0 \;\; 1 \;\; 2 \;\; 3 \;\; 4 \;\; 5 \;\; 6 \;\; 7 \;\; 8 \;\; 
 For every even $m \geq 4$, the construction of \Cref{def:even} (using exceptional tables for $m = 4, 6, 8$ and the uniform rule for $m \geq 10$) yields a Hamiltonian decomposition of $\Gamma_m$.
 \end{theorem}
 
-The proof of \Cref{thm:even} is computational: for every even $m$ from~4 to~100, the verification suite constructs all three round maps from the fiber-coordinate specification and confirms that each is a single $m^2$-cycle on $\Zm^2$, that every arc is a valid Cayley digraph arc, and that the three cycles partition all $3m^3$ arcs. The construction code and verification suite are available at \url{https://github.com/no-way-labs/residue}. A symbolic proof of the even construction's correctness for all $m$ remains open.
+The proof of \Cref{thm:even} is computational: for every even $m$ from~4 to~200 (and spot-checked at $m = 250, 300, 400, 500$), the verification suite constructs all three round maps from the fiber-coordinate specification and confirms that each is a single $m^2$-cycle on $\Zm^2$, that every arc is a valid Cayley digraph arc, and that the three cycles partition all $3m^3$ arcs. The construction code and verification suite are available at \url{https://github.com/no-way-labs/residue}. A symbolic proof of the even construction's correctness for all $m$ remains open.
 
 \subsection{Why the Even Case Is Harder}
 
@@ -570,7 +570,7 @@ Single-agent frameworks for LLM mathematical reasoning implicitly frame the prob
 \begin{enumerate}[label=(\alph*)]
     \item The even case is inherently messier than the odd case. Every approach---human, single-agent, multi-agent---found this. The parity obstruction is real, not an artifact.
     \item The layer-sign parity invariant (\Cref{prop:sign}) is a genuine structural discovery with potential applications to related Cayley graph decomposition problems.
-    \item The even-case staircase construction, while verified to $m = 100$, lacks a symbolic proof. Whether this can be proved by the same agents (or any current AI system) is an open question.
+    \item The even-case staircase construction, while verified to $m = 200$ (and spot-checked to $m = 500$), lacks a symbolic proof. Whether this can be proved by the same agents (or any current AI system) is an open question.
 \end{enumerate}
 
 % ============================================================
@@ -578,7 +578,7 @@ Single-agent frameworks for LLM mathematical reasoning implicitly frame the prob
 \label{sec:limitations}
 
 \begin{enumerate}
-    \item \textbf{The even-case proof is computational.} The construction of \Cref{def:even} is verified for all even $m \leq 100$, but a symbolic proof of correctness for all even $m$ remains open. The staircase layer's parity-sensitive case structure makes direct symbolic analysis substantially harder than the odd case.
+    \item \textbf{The even-case proof is computational.} The construction of \Cref{def:even} is verified for all even $m \leq 200$ (with spot checks to $m = 500$), but a symbolic proof of correctness for all even $m$ remains open. The staircase layer's parity-sensitive case structure makes direct symbolic analysis substantially harder than the odd case.
 
     \item \textbf{The experiment has $n = 2$ agents.} Broader conclusions about prompt design and multi-agent coordination require more replications across different problems and model providers.
 
@@ -599,7 +599,7 @@ Single-agent frameworks for LLM mathematical reasoning implicitly frame the prob
 \begin{itemize}
     \item For $m = 2$: impossible (exhaustive search).
     \item For odd $m \geq 3$: closed-form construction via the diagonal layer schedule (\Cref{thm:odd}), with symbolic proof of correctness.
-    \item For even $m \geq 4$: closed-form construction via bulk layers plus staircase and terminal layers (\Cref{thm:even}), verified computationally for all $m \leq 100$.
+    \item For even $m \geq 4$: closed-form construction via bulk layers plus staircase and terminal layers (\Cref{thm:even}), verified computationally for all $m \leq 200$, with spot checks to $m = 500$.
 \end{itemize}
 
 \textbf{The methodological result.} A structured exploration prompt (Residue) compresses LLM mathematical investigation from 31~explorations to~5 for the same milestone, while enabling graceful failure documentation and cross-agent data transfer. Two agents with different reasoning styles---one top-down symbolic, one bottom-up computational---produce complementary artifacts that, when combined by an orchestrator agent (also Claude Opus~4.6 Thinking), solve a problem neither could solve alone.

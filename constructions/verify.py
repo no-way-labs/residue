@@ -136,8 +136,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="Verify Hamiltonian decompositions of Z_m^3"
     )
-    parser.add_argument("--max-m", type=int, default=101,
-                        help="verify all m from 3 to this value (default: 101)")
+    parser.add_argument(
+        "--max-m", type=int, default=201,
+        help="verify all m from 3 to this value (default: 201)"
+    )
     parser.add_argument("--m", type=int, default=None,
                         help="verify just this single m value")
     parser.add_argument("--fast", action="store_true",

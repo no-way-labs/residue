@@ -16,7 +16,7 @@ Knuth's Claude solved the odd case in 31 explorations with significant human gui
 |------|--------|-------------|
 | m = 2 | Impossible | Exhaustive search (Aubert & Schneider, 1982) |
 | Odd m ≥ 3 | **Solved** (symbolic proof) | Diagonal layer schedule: 4 layer types, count-based |
-| Even m ≥ 4 | **Solved** (verified to m = 100) | Bulk XYI + staircase + terminal layer |
+| Even m ≥ 4 | **Solved** (verified to m = 200, spot-checked to 500) | Bulk XYI + staircase + terminal layer |
 
 **Odd case:** 5 explorations, no human intervention. Different construction from Knuth's (layer-level vs. vertex-level). Symbolic proof via skew-map criterion.
 
@@ -55,7 +55,7 @@ residue/
 ```bash
 cd constructions
 
-# Verify all m from 3 to 101
+# Verify all m from 3 to 201
 python verify.py
 
 # Verify a single value

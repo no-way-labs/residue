@@ -26,9 +26,9 @@ Knuth's Claude solved the odd case in 31 explorations with significant human gui
 
 Two LLM agents operating under a shared structured exploration prompt ("Residue"), with a human orchestrator routing data and tools between them:
 
-- **Fast agent** (top-down symbolic reasoner): Solved odd case in 5 explorations. Discovered the layer-sign parity invariant for even m. Stalled at m = 10.
-- **Slow agent** (bottom-up computational solver): Hit the serpentine dead end (5 explorations vs. ~10 for Knuth's Claude), then achieved a 67,000× speedup via MRV + forward checking. Produced solutions for m = 3 through 12.
-- **Orchestrator**: Transferred the slow agent's solutions in fiber-coordinate format to the fast agent. Transferred the MRV solver, which the fast agent adapted into a seeded solver. The combination produced insight neither agent could reach alone.
+- **Agent O** (GPT-5.4 Thinking, Extra High — top-down symbolic reasoner): Solved odd case in 5 explorations. Discovered the layer-sign parity invariant for even m. Stalled at m = 10.
+- **Agent C** (Claude Opus 4.6 — bottom-up computational solver): Hit the serpentine dead end (5 explorations vs. ~10 for Knuth's Claude), then achieved a 67,000× speedup via MRV + forward checking. Produced solutions for m = 3 through 12.
+- **Orchestrator**: Transferred Agent C's solutions in fiber-coordinate format to Agent O. Transferred the MRV solver, which Agent O adapted into a seeded solver. The combination produced insight neither agent could reach alone.
 
 ## Repository Structure
 
@@ -42,8 +42,8 @@ residue/
 ├── prompt/
 │   └── residue.md             # the structured exploration prompt
 ├── logs/
-│   ├── fast_agent_log.md      # 28 explorations (odd + even)
-│   ├── slow_agent_log.md      # 15 explorations
+│   ├── fast_agent_log.md      # Agent O: 28 explorations (odd + even)
+│   ├── slow_agent_log.md      # Agent C: 15 explorations
 │   └── meta_log.md            # orchestration decisions
 ├── lean/                      # formalization (in progress)
 └── paper/

@@ -7,14 +7,14 @@
 **Experiment:** Test a structured exploration prompt ("Residue") against the same problem, using two different LLM providers. Same prompt, same problem statement, no hints about odd/even split. Benchmark: does the prompt improve on the 31-exploration trajectory from the Knuth case?
 
 **Agents:**
-- **Fast agent** (Provider A): Top-down symbolic reasoner
-- **Slow agent** (Provider B): Bottom-up computational solver
+- **Agent O** (GPT-5.4 Thinking, Extra High): Top-down symbolic reasoner
+- **Agent C** (Claude Opus 4.6): Bottom-up computational solver
 
 ---
 
 ## Phase 1: Independent Runs on the Full Problem
 
-### Fast Agent
+### Agent O
 
 | Exploration | Action | Result |
 |---|---|---|
@@ -26,7 +26,7 @@
 
 **Observation:** 5 explorations, no human intervention. Same milestone as Knuth's 31-exploration session. Different construction (layer factorization vs. vertex-level direction function). More mathematically mature — top-down symbolic reduction rather than bottom-up pattern matching.
 
-### Slow Agent
+### Agent C
 
 | Exploration | Action | Result |
 |---|---|---|
@@ -39,11 +39,11 @@
 | 14 | MRV + forward checking | **Breakthrough.** 67,000× speedup. Solutions for m=3 through m=12. |
 | 15 | Literature search | Found Knuth's paper. Stopped. |
 
-**Observation:** 15 explorations. Never found the fiber-coordinate framework. Reached the same serpentine attractor as Knuth's Claude and spent 5 explorations escaping it (vs. ~10 for Knuth's Claude). The breakthrough was algorithmic (better search), not mathematical (better theory). Produced solutions for m=10 and m=12 that the fast agent could not reach.
+**Observation:** 15 explorations. Never found the fiber-coordinate framework. Reached the same serpentine attractor as Knuth's Claude and spent 5 explorations escaping it (vs. ~10 for Knuth's Claude). The breakthrough was algorithmic (better search), not mathematical (better theory). Produced solutions for m=10 and m=12 that Agent O could not reach.
 
 ### Comparison
 
-| Dimension | Fast Agent | Slow Agent | Knuth's Claude |
+| Dimension | Agent O | Agent C | Knuth's Claude |
 |---|---|---|---|
 | Explorations to odd solution | 5 | Never (found individual cases) | 31 |
 | Mathematical framework | Fiber coords + layer factorization | Permutation assignment + brute force | Fiber decomposition (expl. 15) + SA |
@@ -52,11 +52,11 @@
 | Human intervention needed | None | None | Significant (restarts, reminders) |
 | Degradation | Clean stall at m=10 | None (found literature) | Yes (lost ability to write programs) |
 
-**Key insight:** Same prompt, radically different strategies. The prompt structured the record-keeping identically; the models diverged in reasoning style. The fast agent skipped the serpentine attractor entirely. The slow agent followed almost the same trajectory as Knuth's Claude but compressed by the structured logging.
+**Key insight:** Same prompt, radically different strategies. The prompt structured the record-keeping identically; the models diverged in reasoning style. The Agent O skipped the serpentine attractor entirely. The Agent C followed almost the same trajectory as Knuth's Claude but compressed by the structured logging.
 
 ---
 
-## Phase 2: Fast Agent Pushes Even Case
+## Phase 2: Agent O Pushes Even Case
 
 Instructed to work on even m with 15-exploration budget.
 
@@ -74,36 +74,36 @@ Instructed to work on even m with 15-exploration budget.
 ## Phase 3: Cross-Agent Data Transfer
 
 ### Decision Point
-The slow agent had m=10 and m=12 solutions. The fast agent had the structural framework but couldn't reach m=10. I decided to bridge them.
+The Agent C had m=10 and m=12 solutions. The Agent O had the structural framework but couldn't reach m=10. I decided to bridge them.
 
 ### Action: Fiber Coordinate Tables
-Asked slow agent to export m=4, 6, 8, 10, 12 solutions in fiber-coordinate layer format (the fast agent's native representation). Passed the resulting p1_fiber_tables.md to the fast agent.
+Asked Agent C to export m=4, 6, 8, 10, 12 solutions in fiber-coordinate layer format (Agent O's native representation). Passed the resulting p1_fiber_tables.md to Agent O.
 
-### Fast Agent Response
+### Agent O Response
 Immediate recognition: "p1_fiber_tables.md unblocked the even side in a real way." All five solutions verified. Pattern identified: **m-2 bulk XYI layers, one staircase repair layer, one terminal row-block layer.** Simpler description than any other known approach to the even case.
 
-**Observation:** The combination produced insight that neither agent could reach alone. Fast agent had the framework but not the data. Slow agent had the data but not the framework. The human orchestrator was the bridge — same role as Filip, but routing information between agents rather than managing one agent's session.
+**Observation:** The combination produced insight that neither agent could reach alone. Agent O had the framework but not the data. Agent C had the data but not the framework. The human orchestrator was the bridge — same role as Filip, but routing information between agents rather than managing one agent's session.
 
 ---
 
 ## Phase 4: Tool Transfer
 
 ### Decision Point
-Fast agent needed to verify predictions at m=14, 16 but couldn't compute exact solutions. Slow agent had the MRV solver.
+Agent O needed to verify predictions at m=14, 16 but couldn't compute exact solutions. Agent C had the MRV solver.
 
 ### Action
-Extracted MRV solver from slow agent as standalone Python function. Placed in fast agent's working directory.
+Extracted MRV solver from Agent C as standalone Python function. Placed in Agent O's working directory.
 
-### Fast Agent Response
-Dismissed the unseeded solver as too slow for m ≥ 14. Adapted it into a seeded solver, using its own structural predictions to constrain the domain. This is the ideal synthesis: theory-guided search.
+### Agent O Response
+Agent O dismissed the unseeded solver as too slow for m ≥ 14. Adapted it into a seeded solver, using its own structural predictions to constrain the domain. This is the ideal synthesis: theory-guided search.
 
-**Observation:** The fast agent didn't use the tool as given — it improved it by combining the slow agent's search infrastructure with its own structural knowledge. The seeded solver is faster than either the raw MRV or the fast agent's analytical approach alone.
+**Observation:** Agent O didn't use the tool as given — it improved it by combining Agent C's search infrastructure with its own structural knowledge. The seeded solver is faster than either the raw MRV or Agent O's analytical approach alone.
 
 ---
 
 ## Phase 5: Closing the Even Case
 
-### Fast Agent Trajectory (with seeded solver)
+### Agent O Trajectory (with seeded solver)
 
 - Seeded exact solve at m=14 and m=16: both returned quickly.
 - Last layer prediction was correct. Error localized to bottom staircase rows of penultimate layer.
@@ -112,10 +112,10 @@ Dismissed the unseeded solver as too slow for m ≥ 14. Adapted it into a seeded
 - **m=18: predicted table verifies directly.** Three round maps are [324], [324], [324].
 
 ### Context Update
-Informed the fast agent that other researchers (Stappers with Claude, Ho Boon Suan with GPT-5.3-codex) had found working even-case constructions but described them as "chaotic" and "far more complex" than the odd case. No clean closed-form family known.
+Informed Agent O that other researchers (Stappers with Claude, Ho Boon Suan with GPT-5.3-codex) had found working even-case constructions but described them as "chaotic" and "far more complex" than the odd case. No clean closed-form family known.
 
 ### Current Status
-Fast agent is running verification of the closed-form even construction for all even m from 4 to 100. If it passes, this is the cleanest even-case result known — simpler than any other published construction.
+Agent O is running verification of the closed-form even construction for all even m from 4 to 100. If it passes, this is the cleanest even-case result known — simpler than any other published construction.
 
 ---
 
@@ -123,17 +123,17 @@ Fast agent is running verification of the closed-form even construction for all 
 
 ### What the Prompt Did
 
-1. **Prevented serpentine trap compression.** The slow agent spent 5 explorations on serpentines (vs. ~10 for Knuth's Claude). The structured failure logging forced clear articulation of why serpentines fail, preventing minor-variation grinding.
+1. **Prevented serpentine trap compression.** The Agent C spent 5 explorations on serpentines (vs. ~10 for Knuth's Claude). The structured failure logging forced clear articulation of why serpentines fail, preventing minor-variation grinding.
 
-2. **Made reformulations persistent.** Both agents discovered fiber coordinates. The fast agent made it central because the Reformulations field elevated it to a first-class artifact. The slow agent noted it but didn't build on it — suggesting the field helps but can't force a model to recognize which insight is load-bearing.
+2. **Made reformulations persistent.** Both agents discovered fiber coordinates. The Agent O made it central because the Reformulations field elevated it to a first-class artifact. The Agent C noted it but didn't build on it — suggesting the field helps but can't force a model to recognize which insight is load-bearing.
 
-3. **Enabled clean escalation.** The fast agent's stall at m=10 was well-documented: specific basin ([97,3]), specific diagnosis (repair moves preserve an invariant), specific handoff ("here's what kind of insight I'm missing"). This made the cross-agent transfer actionable.
+3. **Enabled clean escalation.** The Agent O's stall at m=10 was well-documented: specific basin ([97,3]), specific diagnosis (repair moves preserve an invariant), specific handoff ("here's what kind of insight I'm missing"). This made the cross-agent transfer actionable.
 
 4. **Produced different strategies from different models.** Same scaffolding, different reasoning styles. The prompt structures process, not thought.
 
 ### What the Prompt Didn't Do
 
-1. **Didn't expand conception space.** The slow agent never found the layer-factorization framework. No prompt can make a model see structure it can't see.
+1. **Didn't expand conception space.** The Agent C never found the layer-factorization framework. No prompt can make a model see structure it can't see.
 
 2. **Didn't prevent dead ends.** Both agents explored unproductive directions. The prompt made the dead ends well-documented and bounded, not non-existent.
 
@@ -141,13 +141,13 @@ Fast agent is running verification of the closed-form even construction for all 
 
 ### What Surprised Us
 
-1. **The slow agent's MRV breakthrough was the most consequential single move.** Not mathematical insight but engineering — and it produced more even-case data than the fast agent's elegant theory.
+1. **The Agent C's MRV breakthrough was the most consequential single move.** Not mathematical insight but engineering — and it produced more even-case data than Agent O's elegant theory.
 
-2. **The cross-agent combination was strictly more powerful than either agent alone.** This wasn't planned — it emerged from the fast agent's stall at m=10 and the slow agent's brute-force solutions.
+2. **The cross-agent combination was strictly more powerful than either agent alone.** This wasn't planned — it emerged from Agent O's stall at m=10 and Agent C's brute-force solutions.
 
-3. **The fast agent improved the slow agent's tool.** The seeded solver is better than either the raw MRV or the fast agent's analytical predictions. Tools transfer and evolve across agents.
+3. **The Agent O improved Agent C's tool.** The seeded solver is better than either the raw MRV or Agent O's analytical predictions. Tools transfer and evolve across agents.
 
-4. **The even case may be genuinely messier than the odd case.** Every approach — Stappers, Ho Boon Suan, both agents — found the even case harder and less elegant. The fast agent's "m-2 bulk layers plus two repair layers" is the simplest description so far, but still more complex than the odd case's pure arithmetic criterion. This may reflect the problem's structure, not any agent's limitation.
+4. **The even case may be genuinely messier than the odd case.** Every approach — Stappers, Ho Boon Suan, both agents — found the even case harder and less elegant. The Agent O's "m-2 bulk layers plus two repair layers" is the simplest description so far, but still more complex than the odd case's pure arithmetic criterion. This may reflect the problem's structure, not any agent's limitation.
 
 ---
 
@@ -156,12 +156,12 @@ Fast agent is running verification of the closed-form even construction for all 
 | Step | Action | Outcome |
 |---|---|---|
 | 0 | Designed prompt based on analysis of Knuth's paper and Claude's Cycles | Residue prompt v2 |
-| 1 | Launched fast agent on full problem | Odd case solved in 5 explorations |
-| 2 | Launched slow agent on same problem (different provider) | Reached serpentine dead end, then MRV breakthrough at expl. 14, solutions through m=12 |
-| 3 | Directed fast agent to even case (15-expl budget) | Found m=6, m=8. Layer-sign parity invariant. Stalled at m=10. |
-| 4 | Extracted slow agent's even solutions in fiber coordinates | p1_fiber_tables.md: m=4,6,8,10,12 |
-| 5 | Passed fiber tables to fast agent | Immediate pattern recognition: bulk XYI + staircase + row-block |
-| 6 | Transferred MRV solver to fast agent | Fast agent adapted it into seeded solver |
-| 7 | Fast agent predicted and verified m=14, 16, 18 | Parity-sensitive staircase rule. m=18 verifies independently. |
-| 8 | Informed fast agent of external results (Stappers, Ho Boon Suan) | Context: no clean closed-form known elsewhere |
-| 9 | Fast agent running full verification m=4 to 100 | **Pending** |
+| 1 | Launched Agent O on full problem | Odd case solved in 5 explorations |
+| 2 | Launched Agent C on same problem (different provider) | Reached serpentine dead end, then MRV breakthrough at expl. 14, solutions through m=12 |
+| 3 | Directed Agent O to even case (15-expl budget) | Found m=6, m=8. Layer-sign parity invariant. Stalled at m=10. |
+| 4 | Extracted Agent C's even solutions in fiber coordinates | p1_fiber_tables.md: m=4,6,8,10,12 |
+| 5 | Passed fiber tables to Agent O | Immediate pattern recognition: bulk XYI + staircase + row-block |
+| 6 | Transferred MRV solver to Agent O | Agent O adapted it into seeded solver |
+| 7 | Agent O predicted and verified m=14, 16, 18 | Parity-sensitive staircase rule. m=18 verifies independently. |
+| 8 | Informed Agent O of external results (Stappers, Ho Boon Suan) | Context: no clean closed-form known elsewhere |
+| 9 | Agent O running full verification m=4 to 100 | **Pending** |

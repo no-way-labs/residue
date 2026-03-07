@@ -86,7 +86,7 @@ Consider the Cayley digraph on $\Zm^3$ with generators $e_1, e_2, e_3$, where $e
 
 This problem arose while Knuth was writing about directed Hamiltonian cycles for a future volume of \emph{The Art of Computer Programming}~\cite{knuth-taocp4a}. Knuth solved the case $m = 3$ and posed the general problem as an exercise. Filip Stappers discovered empirical solutions for $4 \leq m \leq 16$, making the existence of decompositions highly plausible. Stappers then posed the problem to Claude Opus~4.6, Anthropic's hybrid reasoning model. Over the course of 31~explorations with significant human coaching, Claude found a construction valid for all odd~$m$. Knuth verified the construction, proved its correctness, and published the result as ``Claude's Cycles''~\cite{knuth2026}, identifying exactly 760 valid ``Claude-like'' decompositions for odd~$m > 1$. The even case was left open.
 
-In the postscript to the revised paper (March~4), Knuth reported that Stappers had put Claude Opus~4.6 to work on the even case for about 4~hours, producing a program that ``sets up a partial fiber construction similar to the odd case, then runs a search to fix it all up'' using ORTools CP-SAT~\cite{knuth-even-solution}. Separately, Ho Boon Suan in Singapore produced a computational construction for even $m \geq 8$ using GPT-5.3-codex~\cite{knuth-even-closed}, tested for all even $m$ from 8 to 200 and random values up to 2000. Knuth described this pattern as ``far more chaotic'' and ``far more complex'' than the odd case. Neither construction had a clean closed-form family or a proof of correctness.
+In the postscript to the revised paper (March~4), Knuth reported that Stappers had put Claude Opus~4.6 to work on the even case for about 4~hours, producing a program that ``sets up a partial fiber construction similar to the odd case, then runs a search to fix it all up'' using ORTools CP-SAT~\cite{knuth-even-solution}. Separately, Ho Boon Suan in Singapore produced a computational construction for even $m \geq 8$ using GPT-5.3-codex~\cite{knuth-even-closed}, tested for all even $m$ from 8 to 200 and random values up to 2000. Ho described this pattern as ``far more chaotic'' and ``far more complex'' than the odd case. Neither construction had a clean closed-form family or a proof of correctness.
 
 This paper makes two contributions:
 \begin{enumerate}[label=(\roman*)]
@@ -120,7 +120,7 @@ In these coordinates, a vertex is $(s, x, y)$ with $k = (s - x - y) \bmod m$, an
     Y &: (x, y) \mapsto (x, y+1), \\
     I &: (x, y) \mapsto (x, y).
 \end{align}
-At each layer transition $s \to s+1$, the three available moves are exactly $X$, $Y$, and $I$, and a Hamiltonian decomposition corresponds to choosing, at each $(x, y, s)$, which of $\{X, Y, I\}$ is assigned to which cycle---an ordered 1-factorization of the bipartite graph $I + X + Y$ on each layer.
+At each layer transition $s \to s+1$, the three available moves are exactly $X$, $Y$, and $I$, and a Hamiltonian decomposition corresponds to choosing, at each $(x, y, s)$, which of $\{X, Y, I\}$ is assigned to which cycle---an ordered 1-factorization of the bipartite graph on each layer whose vertex classes are the two copies of $\Zm^2$ (at layers $s$ and $s+1$) and whose three perfect matchings are $I$, $X$, and~$Y$.
 
 \subsection{The Round-Map Criterion}
 
@@ -601,6 +601,7 @@ Single-agent frameworks for LLM mathematical reasoning implicitly frame the prob
     \item The even case is inherently messier than the odd case. Every approach---human, single-agent, multi-agent---found this. The parity obstruction is real, not an artifact.
     \item The layer-sign parity invariant (\Cref{prop:sign}) is a genuine structural discovery with potential applications to related Cayley graph decomposition problems.
     \item The even-case staircase construction, while verified to $m = 2{,}000$ (and spot-checked to $m = 30{,}000$), lacks a symbolic proof. Whether this can be proved by the same agents (or any current AI system) is an open question.
+    \item Two natural symmetries generate additional decompositions from any given one. First, one may \emph{conjugate} the layer indexing: reversing the roles of layers $0$ and $m{-}1$ (so that the terminal layer sits at $s = 0$ and the staircase at $s = m{-}1$, or any cyclic shift) yields a valid decomposition whenever the original is, since the round-map criterion depends only on the cyclic product of all $m$~layers. Second, \emph{reversing} a decomposition---traversing each Hamiltonian cycle backwards and reading directions after each step rather than before---gives another valid decomposition. These symmetries, noted by Knuth~\cite{knuth2026}, enlarge the family of known decompositions but do not change the underlying construction.
 \end{enumerate}
 
 % ============================================================

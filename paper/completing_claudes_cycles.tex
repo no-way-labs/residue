@@ -18,6 +18,7 @@
 \usepackage{xcolor}
 \usepackage{tikz}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{longtable}
 
 % ---- Theorem environments ----
@@ -129,7 +130,7 @@ For each cycle $r$, let $M_s^{(r)}$ be the matching (a permutation of $\Zm^2$) a
 \end{equation}
 which maps $(x, y)$ at layer~$0$ back to $(x', y')$ at layer~$0$ after traversing all $m$~layers. Cycle~$r$ is Hamiltonian if and only if $P_r$ is a single $m^2$-cycle on $\Zm^2$.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/round_map_cycle.pdf}
 \caption{Round maps for the odd case ($m = 5$, top) and even case ($m = 6$, bottom). Each panel shows the single $m^2$-cycle traced by one color's round map on $\ZZ_m^2$. Arrows darken along the traversal order; the open circle marks the start vertex $(0,0)$. All six round maps are verified to be single cycles.}
@@ -151,7 +152,7 @@ In rotated coordinates $u = x + y$, $v = x$:
 \end{align}
 Both $A$ and $B$ are Hamiltonian cycles on $\Zm^2$ for every $m \geq 2$.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/diagonal_gadget.pdf}
 \caption{The diagonal gadget on $\ZZ_7^2$. Matching~$A$ uses $X$ (blue, vertical) off the diagonal $D = \{(x,y) : x+y \equiv 0\}$ and $Y$ (red, horizontal) on~$D$. Matching~$B$ reverses the roles. Both are Hamiltonian cycles on $\ZZ_m^2$; the entire odd-case construction is built from words in $A$ and~$B$.}
@@ -305,7 +306,7 @@ By exhaustive search (following Aubert \& Schneider~\cite{aubert1982}), no Hamil
 
 For every even $m = 2h \geq 4$, we provide an explicit fiber-coordinate construction. The small cases $m = 4, 6, 8$ are handled by exceptional tables found by computational search. For $m = 2h \geq 10$, the following uniform rule applies.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/layer_stack.pdf}
 \caption{Layer structure of the even-case construction for $m = 12$. The first $m{-}2 = 10$ layers are constant $XYI$ everywhere (blue). The penultimate staircase layer ($s = 10$) contains the diagonal walk and parity-dependent structure. The terminal layer ($s = 11$) is a row-block of $YIX$/$IYX$.}
@@ -392,7 +393,7 @@ Row & $d$ & $y = 0 \;\; 1 \;\; 2 \;\; 3 \;\; 4 \;\; 5 \;\; 6 \;\; 7 \;\; 8 \;\; 
 \noindent The terminal layer ($s = 9$) is constant $YIX$ on all rows except rows~$7$ and~$8$, which use $IYX$.
 \end{example}
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/staircase_heatmap.pdf}
 \caption{Staircase layer (penultimate, $s = m{-}2$) for $m = 12$ ($h = 6$, even) and $m = 10$ ($h = 5$, odd). Each cell is colored by its direction triple. The top half shows the diagonal walk ($YXI$ descending one column per row, $IYX$ anchoring the last column). The bottom half exhibits different patterns depending on the parity of $h$. The dashed line separates the two halves at row~$h$.}

@@ -86,7 +86,7 @@ Consider the Cayley digraph on $\Zm^3$ with generators $e_1, e_2, e_3$, where $e
 
 This problem arose while Knuth was writing about directed Hamiltonian cycles for a future volume of \emph{The Art of Computer Programming}~\cite{knuth-taocp4a}. Knuth solved the case $m = 3$ and posed the general problem as an exercise. Filip Stappers discovered empirical solutions for $4 \leq m \leq 16$, making the existence of decompositions highly plausible. Stappers then posed the problem to Claude Opus~4.6, Anthropic's hybrid reasoning model. Over the course of 31~explorations with significant human coaching, Claude found a construction valid for all odd~$m$. Knuth verified the construction, proved its correctness, and published the result as ``Claude's Cycles''~\cite{knuth2026}, identifying exactly 760 valid ``Claude-like'' decompositions for odd~$m > 1$. The even case was left open.
 
-In the postscript to the revised paper (March~4), Knuth reported that Stappers had put Claude Opus~4.6 to work on the even case for about 4~hours, producing a program that ``sets up a partial fiber construction similar to the odd case, then runs a search to fix it all up'' using ORTools CP-SAT~\cite{knuth-even-solution}. Separately, Ho Boon Suan in Singapore produced a computational construction for even $m \geq 8$ using GPT-5.3-codex~\cite{knuth-even-closed}, tested for all even $m$ from 8 to 200 and random values up to 2000. Ho described this pattern as ``far more chaotic'' and ``far more complex'' than the odd case. Neither construction had a clean closed-form family or a proof of correctness.
+In the postscript to the revised paper (March~4, further revised March~6), Knuth reported a rapid sequence of developments: Stappers put Claude Opus~4.6 to work on the even case, producing a search-based solution via ORTools CP-SAT~\cite{knuth-even-solution}; Ho Boon Suan produced a computational construction for even $m \geq 8$ using GPT-5.3-codex~\cite{knuth-even-closed}, describing the pattern as ``far more chaotic'' than the odd case; Kim Morrison formalized Knuth's odd-case proof in Lean~4~\cite{morrison-lean}; and Maximilian Reitbauer found what Knuth called ``probably the simplest possible'' odd-case construction by interacting with GPT~5.4 and Claude~4.6 Sonnet~\cite{reitbauer2026}. Ho subsequently used GPT-5.4~Pro to produce a complete 14-page proof of~\cite{knuth-even-closed}'s correctness without human editing~\cite{ho-proof}. Finally, Knuth acknowledged the present work, describing the even-case construction as ``considerably simpler'' than~\cite{knuth-even-closed} and noting that the process analysis has ``potentially significant implications for how new problems can be tackled and resolved in the future.''
 
 This paper makes two contributions:
 \begin{enumerate}[label=(\roman*)]
@@ -166,7 +166,7 @@ Both $A$ and $B$ are Hamiltonian cycles on $\Zm^2$ for every $m \geq 2$.
     \item \textbf{Alspach's Conjecture (1984)}~\cite{alspach1984}: Every connected $2k$-regular Cayley graph on a finite abelian group has a Hamiltonian decomposition. Open in general.
     \item \textbf{Curran \& Witte (1985)}~\cite{curran1985}: $C_m \square C_m \square C_m$ has at least one Hamiltonian cycle. Does not give a full decomposition.
     \item \textbf{Darijani, Miraftab \& Morris (2022)}~\cite{darijani2022}: Arc-disjoint Hamiltonian paths in products of directed cycles. Partial results; the full 3-cycle product decomposition was open.
-    \item \textbf{Knuth (2026)}~\cite{knuth2026}: Odd-case construction via Claude Opus~4.6. Exactly 760 ``Claude-like'' decompositions valid for all odd $m > 1$. Even case left open.
+    \item \textbf{Knuth (2026)}~\cite{knuth2026}: Odd-case construction via Claude Opus~4.6. Exactly 760 ``Claude-like'' decompositions valid for all odd $m > 1$. Even case left open. The March~6 revision acknowledges the present work's independent odd-case construction and even-case solution.
 \end{itemize}
 
 % ============================================================
@@ -463,7 +463,7 @@ Agent~O (OpenAI GPT-5.4 Thinking, set to Extra High) is a top-down symbolic reas
 
 \textbf{Key observations:}
 \begin{itemize}
-    \item \textbf{Five explorations, no human intervention.} The same milestone (odd case solved for all $m$) that Knuth's Claude reached in 31~explorations with significant coaching.
+    \item \textbf{Five explorations, no human intervention.} The same milestone (odd case solved for all $m$) that Knuth's Claude reached in 31~explorations with significant coaching.\footnote{Exploration count is an imperfect metric. Many of Claude's 31~explorations involved reasonable strategies---testing linear and quadratic functions, trying serpentine constructions---that happen to fail on this particular problem but might have succeeded on a different one. As Knuth notes~\cite{knuth-pc}, optimizing for any particular metric is often misleading. The comparison is reported as a factual observation, not a claim that fewer explorations is unconditionally better.}
     \item \textbf{Different construction.} Agent~O's layer-count approach is algebraically cleaner than Knuth's vertex-level rule, but produces a different (smaller) family.
     \item \textbf{The Strategy Register prevented backtracking.} The fiber-coordinate reformulation was recorded at exploration~1 and elevated to a first-class structural tool via the Reformulations field. It was never revisited or re-derived.
     \item \textbf{The serpentine attractor was skipped entirely.} Knuth's Claude spent $\sim$10 explorations on serpentine constructions. Agent~O never considered them---it went directly to the symbolic diagonal family.
@@ -570,7 +570,7 @@ The orchestrator informed Agent~O that other researchers (Stappers with Claude, 
 \subsection{About the Prompt}
 
 \begin{enumerate}[label=(\alph*)]
-    \item \textbf{Compression:} 5~explorations vs.\ 31 for the same milestone (odd case solved). The structured logging forced each exploration to be maximally informative.
+    \item \textbf{Compression:} 5~explorations vs.\ 31 for the same milestone (odd case solved), though exploration count is a crude proxy (see footnote in \Cref{sec:fast}). The structured logging forced each exploration to be maximally informative.
     \item \textbf{Bounded dead ends:} Agent~C spent 5~explorations on serpentines (vs.\ $\sim$10 for Knuth's Claude). The ``What This Rules Out'' field generalized failures to approach classes, preventing minor-variation grinding.
     \item \textbf{Graceful escalation:} Agent~O's $m = 10$ stall produced a useful handoff specification, not a degradation. The structured failure record (specific basin, specific diagnosis, specific gap) made the cross-agent transfer actionable.
     \item \textbf{Model-independence of process, model-dependence of strategy:} Same scaffolding, radically different mathematical approaches. The prompt structures process, not thought.
@@ -601,7 +601,7 @@ Single-agent frameworks for LLM mathematical reasoning implicitly frame the prob
     \item The even case is inherently messier than the odd case. Every approach---human, single-agent, multi-agent---found this. The parity obstruction is real, not an artifact.
     \item The layer-sign parity invariant (\Cref{prop:sign}) is a genuine structural discovery with potential applications to related Cayley graph decomposition problems.
     \item The even-case staircase construction, while verified to $m = 2{,}000$ (and spot-checked to $m = 30{,}000$), lacks a symbolic proof. Whether this can be proved by the same agents (or any current AI system) is an open question.
-    \item Two natural symmetries generate additional decompositions from any given one. First, one may \emph{conjugate} the layer indexing: reversing the roles of layers $0$ and $m{-}1$ (so that the terminal layer sits at $s = 0$ and the staircase at $s = m{-}1$, or any cyclic shift) yields a valid decomposition whenever the original is, since the round-map criterion depends only on the cyclic product of all $m$~layers. Second, \emph{reversing} a decomposition---traversing each Hamiltonian cycle backwards and reading directions after each step rather than before---gives another valid decomposition. These symmetries, noted by Knuth~\cite{knuth2026}, enlarge the family of known decompositions but do not change the underlying construction.
+    \item Two natural symmetries generate additional decompositions from any given one. First, one may \emph{conjugate} the layer indexing: reversing the roles of layers $0$ and $m{-}1$ (so that the terminal layer sits at $s = 0$ and the staircase at $s = m{-}1$, or any cyclic shift) yields a valid decomposition whenever the original is, since the round-map criterion depends only on the cyclic product of all $m$~layers. Second, \emph{reversing} a decomposition---traversing each Hamiltonian cycle backwards and reading directions after each step rather than before---gives another valid decomposition. These symmetries, noted by Knuth~\cite{knuth-pc}, enlarge the family of known decompositions but do not change the underlying construction.
 \end{enumerate}
 
 % ============================================================
@@ -633,7 +633,7 @@ Single-agent frameworks for LLM mathematical reasoning implicitly frame the prob
     \item For even $m \geq 4$: closed-form construction via bulk layers plus staircase and terminal layers (\Cref{thm:even}), verified computationally for all $m \leq 2{,}000$, with spot checks to $m = 30{,}000$.
 \end{itemize}
 
-\textbf{The methodological result.} A structured exploration prompt (Residue) compresses LLM mathematical investigation from 31~explorations to~5 for the same milestone, while enabling graceful failure documentation and cross-agent data transfer. Two agents with different reasoning styles---one top-down symbolic, one bottom-up computational---produce complementary artifacts that, when combined by an orchestrator agent (also Claude Opus~4.6 Thinking), solve a problem neither could solve alone.
+\textbf{The methodological result.} A structured exploration prompt (Residue) reduces the path to the odd-case milestone from 31~explorations to~5 (though exploration count is an imperfect metric---see \Cref{sec:fast}), while enabling graceful failure documentation and cross-agent data transfer. Two agents with different reasoning styles---one top-down symbolic, one bottom-up computational---produce complementary artifacts that, when combined by an orchestrator agent (also Claude Opus~4.6 Thinking), solve a problem neither could solve alone.
 
 \textbf{The deeper point.} The even-case solution required three participants with different capabilities: one that could see structure, one that could compute examples, and one that could recognize when the first needed what the second had produced. The prompt made each agent's output legible to the others. The orchestrator---itself an LLM, directed by the author---made the connections. All three participants were LLM agents. The result belongs to the system, not to any single component.
 
@@ -711,12 +711,12 @@ Python verification code for both the odd and even constructions is available at
 
 % ============================================================
 \bibliographystyle{plain}
-\begin{thebibliography}{10}
+\begin{thebibliography}{12}
 
 \bibitem{knuth2026}
 D.~E. Knuth.
 \newblock Claude's Cycles.
-\newblock Stanford Computer Science Department, February 28, 2026; revised March 4, 2026.
+\newblock Stanford Computer Science Department, February 28, 2026; revised March 6, 2026.
 \newblock \url{https://cs.stanford.edu/~knuth/papers/claude-cycles.pdf}.
 
 \bibitem{aubert1982}
@@ -754,6 +754,22 @@ F.~Stappers.
 H.~B. Suan.
 \newblock Even closed-form construction via {GPT}-5.3-codex.
 \newblock Described in Knuth~\cite{knuth2026}, postscript (March 2026).
+
+\bibitem{morrison-lean}
+K.~Morrison.
+\newblock Lean~4 formalization of Knuth's odd-case proof. Posted online March~4, 2026; described in Knuth~\cite{knuth2026}, postscript.
+
+\bibitem{reitbauer2026}
+M.~Reitbauer.
+\newblock Simplified odd-case construction via {GPT}~5.4 and {C}laude~4.6 {S}onnet. Described in Knuth~\cite{knuth2026}, postscript (March 2026).
+
+\bibitem{ho-proof}
+H.~B. Suan.
+\newblock Proof of correctness for~\cite{knuth-even-closed}, generated by {GPT}-5.4~{P}ro. Described in Knuth~\cite{knuth2026}, postscript (March 2026).
+
+\bibitem{knuth-pc}
+D.~E. Knuth.
+\newblock Personal communication, March 2026.
 
 \end{thebibliography}
 

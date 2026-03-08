@@ -100,7 +100,7 @@ See [prompt/residue.md](prompt/residue.md) for the full text.
 
 ## References
 
-- D. E. Knuth, "Claude's Cycles," Stanford CS, Feb 28 2026; rev. Mar 4 2026.
+- D. E. Knuth, "Claude's Cycles," Stanford CS, Feb 28 2026; rev. Mar 6 2026.
 - J. Aubert & B. Schneider, "Graphes orientés indécomposables en circuits hamiltoniens," JCTB 32 (1982).
 - B. Alspach, "Research Problem 59," Discrete Mathematics 50 (1984).
 - S. Curran & D. Witte, "Hamilton paths in Cartesian products of directed cycles," Ann. Disc. Math. 27 (1985).

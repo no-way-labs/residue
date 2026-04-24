@@ -1,5 +1,7 @@
 # Completing Claude's Cycles
 
+[![DOI](https://zenodo.org/badge/1174551120.svg)](https://doi.org/10.5281/zenodo.19737969)
+
 **Hamiltonian decomposition of Z_m^3 Cayley digraphs for all m > 2.**
 
 This repository contains constructions, proofs, exploration logs, and a verification suite for the Hamiltonian decomposition problem posed by Knuth in ["Claude's Cycles"](https://cs.stanford.edu/~knuth/papers/claude-cycles.pdf) (2026).

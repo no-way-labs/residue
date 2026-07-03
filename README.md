@@ -114,4 +114,5 @@ Keston Aquino-Michaels — kestonamichaels@gmail.com
 
 ## License
 
-MIT
+- Code (constructions, verifiers, Lean formalization): [MIT](LICENSE)
+- Paper (`paper/`): [CC BY 4.0](paper/LICENSE)
